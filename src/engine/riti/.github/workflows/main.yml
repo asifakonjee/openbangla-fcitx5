@@ -1,0 +1,35 @@
+on: [push, pull_request]
+
+name: Continuous integration
+
+# Make sure CI fails on all warnings, including Clippy lints
+env:
+  RUSTFLAGS: "-Dwarnings"
+
+jobs:
+  test:
+    name: Test Suite
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - 1.63.0 # MSRV for linux distributions (>= Debian 12)
+          - nightly
+        platform: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - run: cargo test
+
+  lint:
+    name: Clippy Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: "clippy"
+      - run: cargo clippy
