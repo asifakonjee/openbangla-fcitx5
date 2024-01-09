@@ -80,22 +80,11 @@ impl Method for PhoneticMethod {
         &mut self,
         key: u16,
         _modifier: u8,
-        selection: u8,
         data: &Data,
         config: &Config,
     ) -> Suggestion {
-        let character = keycode_to_char(key);
-        self.buffer.push(character);
-        let mut suggestion = self.create_suggestion(data, config);
-
-        // Preserve user's selection if the keypress was a punctuation mark
-        if let Suggestion::Full { selection: ref mut sel, .. } = suggestion {
-            if matches!(character, '.' | '?' | '!' | ',' | ':' | ';' | '-' | '_' | ')' | '}' | ']' | '\'' | '"') {
-                *sel = selection.into();
-            }
-        }
-
-        suggestion
+        self.buffer.push(keycode_to_char(key));
+        self.create_suggestion(data, config)
     }
 
     fn candidate_committed(&mut self, index: usize, config: &Config) {
@@ -179,7 +168,6 @@ mod tests {
     use crate::config::get_phonetic_method_defaults;
     use crate::context::Method;
     use crate::data::Data;
-    use crate::keycodes::{VC_COMMA, VC_R};
 
     #[test]
     fn test_backspace() {
@@ -199,23 +187,5 @@ mod tests {
             ..Default::default()
         };
         assert!(method.backspace_event(true, &data, &config).is_empty());
-    }
-
-    #[test]
-    fn test_preserve_selection() {
-        let config = get_phonetic_method_defaults();
-        let data = Data::new(&config);
-        let mut method = PhoneticMethod {
-            buffer: "coffee".to_string(),
-            ..Default::default()
-        };
-
-        let suggestion = method.get_suggestion(VC_COMMA, 0, 3, &data, &config);
-        assert_eq!(suggestion.previously_selected_index(), 3);
-
-        method.backspace_event(false, &data, &config);
-
-        let suggestion = method.get_suggestion(VC_R, 0, 3, &data, &config);
-        assert_eq!(suggestion.previously_selected_index(), 0);
     }
 }

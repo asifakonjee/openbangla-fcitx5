@@ -64,7 +64,10 @@ impl Suggestion {
     ///
     /// A *lonely* `Suggestion` struct means that the struct has only one suggestion.
     pub fn is_lonely(&self) -> bool {
-        matches!(&self, Self::Single { .. })
+        match &self {
+            Self::Single { .. } => true,
+            _ => false,
+        }
     }
 
     /// Returns `true` if the `Suggestion` struct is empty.
