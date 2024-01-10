@@ -8,7 +8,7 @@ use crate::config::Config;
 fn riti_free<T>(ptr: *mut T) {
     if !ptr.is_null() {
         unsafe {
-            Box::from_raw(ptr);
+            drop(Box::from_raw(ptr));
         }
     }
 }
@@ -32,18 +32,24 @@ pub extern "C" fn riti_context_free(ptr: *mut RitiContext) {
     riti_free(ptr)
 }
 
+/// Generates suggestion for `key` press.
+/// 
+/// `modifier`: state of modifier keys
+/// `selection`: previously selected user selection index if available otherwise `0`.
+/// It is used to preserve user's candidate selection if the key is a punctuation character in Phonetic method.
 #[no_mangle]
 pub extern "C" fn riti_get_suggestion_for_key(
     ptr: *mut RitiContext,
     key: u16,
     modifier: u8,
+    selection: u8,
 ) -> *mut Suggestion {
     let context = unsafe {
         assert!(!ptr.is_null());
         &*ptr
     };
 
-    let suggestion = context.get_suggestion_for_key(key, modifier);
+    let suggestion = context.get_suggestion_for_key(key, modifier, selection);
 
     Box::into_raw(Box::new(suggestion))
 }
@@ -247,7 +253,7 @@ pub extern "C" fn riti_suggestion_is_empty(ptr: *const Suggestion) -> bool {
 /// `riti_config_set_*` set of functions.
 #[no_mangle]
 pub extern "C" fn riti_config_new() -> *mut Config {
-    Box::into_raw(Box::new(Config::default()))
+    Box::into_raw(Box::default())
 }
 
 

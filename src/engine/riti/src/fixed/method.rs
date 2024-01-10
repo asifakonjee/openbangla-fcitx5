@@ -8,9 +8,9 @@ use crate::{context::Method, data::Data, keycodes::keycode_to_char};
 const MARKS: &str = "`~!@#$%^+*-_=+\\|\"/;:,./?><()[]{}";
 
 enum PendingKar {
-    IKar,
-    EKar,
-    OIKar,
+    I,
+    E,
+    OI,
 }
 
 pub(crate) struct FixedMethod {
@@ -26,6 +26,7 @@ impl Method for FixedMethod {
         &mut self,
         key: u16,
         modifier: u8,
+        _selection: u8,
         data: &Data,
         config: &Config,
     ) -> Suggestion {
@@ -238,9 +239,9 @@ impl FixedMethod {
                     // Capture left standing kar in pending_kar.
                     if rmc != B_HASANTA && is_left_standing_kar(character) {
                         self.pending_kar = match character {
-                            B_I_KAR => Some(PendingKar::IKar),
-                            B_E_KAR => Some(PendingKar::EKar),
-                            B_OI_KAR => Some(PendingKar::OIKar),
+                            B_I_KAR => Some(PendingKar::I),
+                            B_E_KAR => Some(PendingKar::E),
+                            B_OI_KAR => Some(PendingKar::OI),
                             _ => None,
                         };
                         return;
@@ -258,9 +259,9 @@ impl FixedMethod {
                         if rmc == B_HASANTA {
                             self.buffer.pop();
                             self.buffer.push(match left_standing_kar {
-                                PendingKar::EKar => B_E_KAR,
-                                PendingKar::IKar => B_I_KAR,
-                                PendingKar::OIKar => B_OI_KAR,
+                                PendingKar::E => B_E_KAR,
+                                PendingKar::I => B_I_KAR,
+                                PendingKar::OI => B_OI_KAR,
                             });
                             self.pending_kar = None;
                             self.buffer.push(B_HASANTA);
@@ -271,9 +272,9 @@ impl FixedMethod {
                                 && (self.buffer.is_empty() || rmc.is_vowel() || MARKS.contains(rmc))
                             {
                                 self.buffer.push(match left_standing_kar {
-                                    PendingKar::EKar => B_E,
-                                    PendingKar::IKar => B_I,
-                                    PendingKar::OIKar => B_OI,
+                                    PendingKar::E => B_E,
+                                    PendingKar::I => B_I,
+                                    PendingKar::OI => B_OI,
                                 });
                             }
                             self.pending_kar = None;
@@ -380,9 +381,9 @@ impl FixedMethod {
                 if character == B_HASANTA && is_left_standing_kar(rmc) {
                     if value.chars().count() == 1 {
                         self.pending_kar = match self.buffer.pop() {
-                            Some(B_I_KAR) => Some(PendingKar::IKar),
-                            Some(B_E_KAR) => Some(PendingKar::EKar),
-                            Some(B_OI_KAR) => Some(PendingKar::OIKar),
+                            Some(B_I_KAR) => Some(PendingKar::I),
+                            Some(B_E_KAR) => Some(PendingKar::E),
+                            Some(B_OI_KAR) => Some(PendingKar::OI),
                             _ => None,
                         };
                         self.buffer.push(character);
@@ -409,9 +410,9 @@ impl FixedMethod {
                     return;
                 }
                 self.buffer.push(match left_standing_kar {
-                    PendingKar::EKar => B_E_KAR,
-                    PendingKar::IKar => B_I_KAR,
-                    PendingKar::OIKar => B_OI_KAR,
+                    PendingKar::E => B_E_KAR,
+                    PendingKar::I => B_I_KAR,
+                    PendingKar::OI => B_OI_KAR,
                 });
                 self.pending_kar = None;
                 return;
@@ -579,15 +580,15 @@ mod tests {
         let data = Data::new(&config);
         config.set_suggestion_include_english(true);
 
-        method.get_suggestion(VC_A, 0, &data, &config);
-        method.get_suggestion(VC_M, 0, &data, &config);
-        method.get_suggestion(VC_I, 0, &data, &config);
+        method.get_suggestion(VC_A, 0, 0, &data, &config);
+        method.get_suggestion(VC_M, 0, 0, &data, &config);
+        method.get_suggestion(VC_I, 0, 0, &data, &config);
         assert_eq!(method.typed, "ami");
         assert_eq!(method.suggestions, ["আমি", "আমিন", "আমির", "আমিষ", "ami"]);
         method.finish_input_session();
 
-        method.get_suggestion(VC_PAREN_LEFT, 0, &data, &config);
-        method.get_suggestion(VC_PAREN_RIGHT, 0, &data, &config);
+        method.get_suggestion(VC_PAREN_LEFT, 0, 0, &data, &config);
+        method.get_suggestion(VC_PAREN_RIGHT, 0, 0, &data, &config);
         assert_eq!(method.suggestions, ["()"]);
     }
 
@@ -599,16 +600,16 @@ mod tests {
         config.set_suggestion_include_english(true);
         
         config.set_smart_quote(true);
-        method.get_suggestion(VC_QUOTE, 0, &data, &config);
-        method.get_suggestion(VC_K, 0, &data, &config);
-        method.get_suggestion(VC_QUOTE, 0, &data, &config);
+        method.get_suggestion(VC_QUOTE, 0, 0, &data, &config);
+        method.get_suggestion(VC_K, 0, 0, &data, &config);
+        method.get_suggestion(VC_QUOTE, 0, 0, &data, &config);
         assert_eq!(method.suggestions, ["“ক”", "\"k\""]);
         method.finish_input_session();
 
         config.set_smart_quote(false);
-        method.get_suggestion(VC_QUOTE, 0, &data, &config);
-        method.get_suggestion(VC_K, 0, &data, &config);
-        method.get_suggestion(VC_QUOTE, 0, &data, &config);
+        method.get_suggestion(VC_QUOTE, 0, 0, &data, &config);
+        method.get_suggestion(VC_K, 0, 0, &data, &config);
+        method.get_suggestion(VC_QUOTE, 0, 0, &data, &config);
         assert_eq!(method.suggestions, ["\"ক\"", "\"k\""]);
     }
 
@@ -619,27 +620,10 @@ mod tests {
         let data = Data::new(&config);
         config.set_fixed_traditional_kar(false);
 
-        method.get_suggestion(VC_SEMICOLON, 0, &data, &config);
-        method.get_suggestion(VC_PAREN_RIGHT, 0, &data, &config);
+        method.get_suggestion(VC_SEMICOLON, 0, 0, &data, &config);
+        method.get_suggestion(VC_PAREN_RIGHT, 0, 0, &data, &config);
         assert_eq!(method.suggestions, [";)", "😉"]);
         method.finish_input_session();
-
-        method.buffer = "হাসি".to_owned();
-        method.create_dictionary_suggestion(&data, &config);
-        assert_eq!(
-            method.suggestions,
-            [
-                "হাসি",
-                "😁",
-                "😄",
-                "😃",
-                "😀",
-                "হাসিল",
-                "হাসিত",
-                "হাসিস",
-                "হাসিব"
-            ]
-        );
 
         method.buffer = "{লজ্জা}".to_owned();
         method.create_dictionary_suggestion(&data, &config);
@@ -659,6 +643,24 @@ mod tests {
         );
     }
 
+    // TODO: merge this into the `emojis_test` after we bump to the MSRV which 
+    // doesn't induce inconsistent sorting of suggestions.
+    #[rustversion::not(stable(1.63))]
+    #[test]
+    fn test_emojis_compiler_conditional_test() {
+        let mut method = FixedMethod::default();
+        let mut config = get_fixed_method_defaults();
+        let data = Data::new(&config);
+
+        config.set_fixed_traditional_kar(false);
+        method.buffer = "হাসি".to_owned();
+        method.create_dictionary_suggestion(&data, &config);
+        assert_eq!(
+            method.suggestions,
+            ["হাসি", "☺", "🙂", "😄", "😃", "😁", "😀", "হাসিব", "হাসিত"]
+        );
+    }
+
     #[test]
     fn test_suggestion_ansi() {
         let mut method = FixedMethod::default();
@@ -667,9 +669,9 @@ mod tests {
         config.set_suggestion_include_english(true);
         config.set_ansi_encoding(true);
 
-        method.get_suggestion(VC_A, 0, &data, &config);
-        method.get_suggestion(VC_M, 0, &data, &config);
-        method.get_suggestion(VC_I, 0, &data, &config);
+        method.get_suggestion(VC_A, 0, 0, &data, &config);
+        method.get_suggestion(VC_M, 0, 0, &data, &config);
+        method.get_suggestion(VC_I, 0, 0, &data, &config);
         assert_eq!(method.typed, "ami");
         assert_eq!(method.suggestions, ["আমি", "আমিন", "আমির", "আমিষ"]);
         method.finish_input_session();
