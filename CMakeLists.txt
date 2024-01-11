@@ -53,6 +53,8 @@ if(OS_LINUX)
     # Generate compile_commands.json to satisfy vscode linux configuration
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+    ## Set Directories for installing and storing files
+    set(CMAKE_INSTALL_PREFIX "/usr")
     if(NOT DEFINED BIN_DIR)
         set(BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin")
     endif()
@@ -70,9 +72,8 @@ if(OS_LINUX)
     include(FindPkgConfig)
     find_package(PkgConfig)
 
-    option(ENABLE_IBUS "Enable IBus support" ON)
-    option(ENABLE_FCITX "Enable Fcitx support" ON)
-    set(ENABLE_IBUS ON)
+    option(ENABLE_IBUS "Enable IBus support" OFF)
+    option(ENABLE_FCITX "Enable Fcitx support" OFF)
     set(ENABLE_FCITX ON)
 
     if((NOT ENABLE_IBUS) AND (NOT ENABLE_FCITX))

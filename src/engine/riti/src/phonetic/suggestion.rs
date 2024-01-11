@@ -29,7 +29,7 @@ pub(crate) struct PhoneticSuggestion {
 
 impl PhoneticSuggestion {
     pub(crate) fn new(user_autocorrect: HashMap<String, String, RandomState>) -> Self {
-        let table: [(&str, &[&str]); 26] = [
+        let table: Vec<(&str, &[&str])> = vec![
             ("a", &["a", "aa", "e", "oi", "o", "nya", "y"]),
             ("b", &["b", "bh"]),
             ("c", &["c", "ch", "k"]),
@@ -184,9 +184,7 @@ impl PhoneticSuggestion {
         }
 
         // Include written English word if the feature is enabled and it is not included already.
-        // Avoid including meta character suggestion twice, so check `term` is not equal to the
-        // captured preceding characters
-        if config.get_suggestion_include_english() && !typed_added && term != string.preceding() {
+        if config.get_suggestion_include_english() && !typed_added {
             self.suggestions
                 .push(Rank::last_ranked(term.to_string(), 3));
         }
@@ -383,9 +381,6 @@ mod tests {
             suggestion.suggestions,
             ["{আ}", "{🅰️}", "{আঃ}", "{া}", "{এ}", "{অ্যা}", "{অ্যাঁ}", "{a}"]
         );
-
-        suggestion.suggest("\"", &data, &mut selections, &config);
-        assert_eq!(suggestion.suggestions, ["\""]);
     }
 
     #[test]
