@@ -2,7 +2,7 @@
 = ওপেনবাংলা কিবোর্ড
 ifdef::env-github[]
 :imagesdir:
- https://gist.githubusercontent.com/path/to/gist/revision/dir/with/all/images
+ https://raw.githubusercontent.com/asifakonjee/openbangla-fcitx5/data/48.png
 :tip-caption: :bulb:
 :note-caption: :information_source:
 :important-caption: :heavy_exclamation_mark:
