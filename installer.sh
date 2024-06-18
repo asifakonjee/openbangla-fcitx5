@@ -2,7 +2,6 @@
 
 #### OpenBangla Keyboard for fcitx5 Installation Script by ####
 #### Js Bro ( https://github.com/me-js-bro ) ####
-
 # color defination
 red="\e[1;31m"
 green="\e[1;32m"
@@ -40,7 +39,7 @@ printf " \n \n"
 ###------ Startup ------###
 
 # finding the presend directory and log file
-present_dir=$pwd
+present_dir=`pwd`
 cache_dir="$present_dir/.cache"
 
 # log directory
@@ -50,6 +49,7 @@ mkdir -p "$log_dir"
 if [[ ! -f "$log" ]]; then
     touch "$log"
 fi
+
 
 # Detect package manager
 if command -v pacman &> /dev/null; then
@@ -66,6 +66,7 @@ else
     echo "No supported package manager found!"
     exit 1
 fi
+
 
 # Print message about installing necessary packages
 printf "${attention} - Installing necessary packages using ${pkg} \n"
@@ -93,6 +94,8 @@ case "$pkg" in
         ;;
 esac
 
+sleep 1 && clear
+
 printf "${action} - Now building ${yellow}Openbangla Keyboard ${end}...\n"
 
 if [[ -d "$cache_dir/openbangla-fcitx5" ]]; then
@@ -101,7 +104,6 @@ if [[ -d "$cache_dir/openbangla-fcitx5" ]]; then
 fi
 
 git clone --recursive https://github.com/asifakonjee/openbangla-fcitx5.git "$cache_dir/openbangla-fcitx5" 2>&1 | tee -a "$log" || { printf "${error} - Sorry, could not clone openbangla-fcitx5 repository\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
-sleep 1
 
 # Move into the cloned directory
 cd "$cache_dir/openbangla-fcitx5" || { printf "${error} - Unable to change directory\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
