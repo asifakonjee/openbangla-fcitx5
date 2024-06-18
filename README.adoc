@@ -2,7 +2,7 @@
 = ওপেনবাংলা কিবোর্ড
 ifdef::env-github[]
 :imagesdir:
- https://raw.githubusercontent.com/asifakonjee/openbangla-fcitx5/data/48.png
+ https://gist.githubusercontent.com/path/to/gist/revision/dir/with/all/images
 :tip-caption: :bulb:
 :note-caption: :information_source:
 :important-caption: :heavy_exclamation_mark:
@@ -20,7 +20,7 @@ endif::[]
 
 ++++
 <p align="center">
-<img src="https://github.com/OpenBangla/OpenBangla-Keyboard/raw/master/data/128.png">
+<img src="https://github.com/asifakonjee/openbangla-fcitx5/raw/master/data/128.png">
 </p>
 ++++
 
