@@ -65,6 +65,8 @@ elif [[ "$distro" = "opensuse" ]]; then
     sudo zypper in -y libQt5Core-devel libQt5Widgets-devel libQt5Network-devel libzstd-devel libzstd1 cmake make ninja rust ibus-devel ibus clang gcc patterns-devel-base-devel_basis git fcitx5-devel fcitx5 fcitx5-configtool
 elif [[ "$distro" = "void" ]]; then
 	sudo xbps-install base-devel make cmake rust cargo qt5-declarative-devel libzstd-devel qt5-devel cmake-devel git fcitx5 libfcitx5-devel fcitx5-configtool
+elif [[ "$distro" = "debian" ]]; then
+	sudo apt install build-essential rustc cargo cmake libibus-1.0-dev qtbase5-dev qtbase5-dev-tools libzstd-dev fcitx5 fcitx5-config-qt git
 fi
 
 printf "${action} - Now building ${yellow}Openbangla Keyboard ${end}...\n"
