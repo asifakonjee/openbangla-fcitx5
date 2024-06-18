@@ -39,11 +39,11 @@ printf " \n \n"
 ###------ Startup ------###
 
 # finding the presend directory and log file
-present_dir=`pwd`
+present_dir=$pwd
 cache_dir="$present_dir/.cache"
 
 # log directory
-log_dir="$present_dir/Install-Logs"
+log_dir="$present_dir/.openbangla-fcitx5"
 log="$log_dir"/Install.log
 mkdir -p "$log_dir"
 if [[ ! -f "$log" ]]; then
