@@ -39,7 +39,7 @@ printf " \n \n"
 ###------ Startup ------###
 
 # finding the presend directory and log file
-present_dir=$pwd
+present_dir=`pwd`
 cache_dir="$present_dir/.cache"
 
 # log directory
