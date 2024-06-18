@@ -1,6 +1,6 @@
 #!/bin/env bash
 
-#### OpenBangla Keyboard Installation Script by ####
+#### OpenBangla Keyboard for fcitx5 Installation Script by ####
 #### Js Bro ( https://github.com/me-js-bro ) ####
 
 # color defination
@@ -23,13 +23,13 @@ error="[${red} ERROR ${end}]"
 
 display_text() {
     cat << "EOF"
-     __        __    _ _         _         ____              _                   
-     \ \      / / __(_) |_ ___  (_)_ __   | __ )  __ _  __ _| | __ _             
-      \ \ /\ / / '__| | __/ _ \ | | '_ \  |  _ \ / _` |/ _` | |/ _` |            
-       \ V  V /| |  | | ||  __/ | | | | | | |_) | (_| | (_| | | (_| |  _   _   _ 
-        \_/\_/ |_|  |_|\__\___| |_|_| |_| |____/ \__,_|\__, |_|\__,_| (_) (_) (_)
-                                                       |___/                          
-   
+      ___                       ____                        _                _  __             _                             _ 
+     / _ \  _ __    ___  _ __  | __ )   __ _  _ __    __ _ | |  __ _        | |/ / ___  _   _ | |__    ___    __ _  _ __  __| |
+    | | | || '_ \  / _ \| '_ \ |  _ \  / _` || '_ \  / _` || | / _` | _____ | ' / / _ \| | | || '_ \  / _ \  / _` || '__|/ _` |
+    | |_| || |_) ||  __/| | | || |_) || (_| || | | || (_| || || (_| ||_____|| . \|  __/| |_| || |_) || (_) || (_| || |  | (_| |
+     \___/ | .__/  \___||_| |_||____/  \__,_||_| |_| \__, ||_| \__,_|       |_|\_\\___| \__, ||_.__/  \___/  \__,_||_|   \__,_|
+           |_|                                       |___/                              |___/                                     
+    
 EOF
 }
 
@@ -40,36 +40,65 @@ printf " \n \n"
 ###------ Startup ------###
 
 # finding the presend directory and log file
-present_dir=`pwd`
+present_dir=$pwd
 cache_dir="$present_dir/.cache"
-distro_cache="$cache_dir/distro"
-if [[ -f "$distro_cache" ]]; then
-    source "$distro_cache"
-fi
 
 # log directory
-log_dir="$present_dir/Logs"
-log="$log_dir"/write-bangla.log
+log_dir="$present_dir/Install-Logs"
+log="$log_dir"/Install.log
 mkdir -p "$log_dir"
 if [[ ! -f "$log" ]]; then
     touch "$log"
 fi
 
-# install required packages
-printf "${attention} - Installing necessary packages in your ${distro} \n"
-if [[ "$distro" == "arch" ]]; then
-    sudo pacman -S --noconfirm base-devel rust cmake qt5-base libibus zstd fcitx5 fcitx5-configtool fcitx5-qt fcitx5-gtk git
-elif [[ "$distro" == "fedora" ]]; then
-    sudo dnf install -y @buildsys-build rust cargo cmake qt5-qtdeclarative-devel ibus-devel libzstd-devel git fcitx5 fcitx5-configtool fcitx5-devel fcitx5-qt5
-elif [[ "$distro" = "opensuse" ]]; then
-    sudo zypper in -y libQt5Core-devel libQt5Widgets-devel libQt5Network-devel libzstd-devel libzstd1 cmake make ninja rust ibus-devel ibus clang gcc patterns-devel-base-devel_basis git fcitx5-devel fcitx5 fcitx5-configtool
-elif [[ "$distro" = "void" ]]; then
-	sudo xbps-install base-devel make cmake rust cargo qt5-declarative-devel libzstd-devel qt5-devel cmake-devel git fcitx5 libfcitx5-devel fcitx5-configtool
-elif [[ "$distro" = "debian" ]]; then
-	sudo apt install build-essential rustc cargo cmake libibus-1.0-dev qtbase5-dev qtbase5-dev-tools libzstd-dev fcitx5 fcitx5-config-qt git
+# Detect package manager
+if command -v pacman &> /dev/null; then
+    pkg="pacman"
+elif command -v dnf &> /dev/null; then
+    pkg="dnf"
+elif command -v zypper &> /dev/null; then
+    pkg="zypper"
+elif command -v xbps-install &> /dev/null; then
+    pkg="xbps-install"
+elif command -v apt &> /dev/null; then
+    pkg="apt"
+else
+    echo "No supported package manager found!"
+    exit 1
 fi
 
+# Print message about installing necessary packages
+printf "${attention} - Installing necessary packages using ${pkg} \n"
+
+# Install required packages based on the detected package manager
+case "$pkg" in
+    pacman)
+        sudo pacman -S --noconfirm base-devel rust cmake qt5-base libibus zstd fcitx5 fcitx5-configtool fcitx5-qt fcitx5-gtk git
+        ;;
+    dnf)
+        sudo dnf install -y @buildsys-build rust cargo cmake qt5-qtdeclarative-devel ibus-devel libzstd-devel git fcitx5 fcitx5-configtool fcitx5-devel fcitx5-qt5
+        ;;
+    zypper)
+        sudo zypper in -y libQt5Core-devel libQt5Widgets-devel libQt5Network-devel libzstd-devel libzstd1 cmake make ninja rust ibus-devel ibus clang gcc patterns-devel-base-devel_basis git fcitx5-devel fcitx5 fcitx5-configtool
+        ;;
+    xbps-install)
+        sudo xbps-install -y base-devel make cmake rust cargo qt5-declarative-devel libzstd-devel qt5-devel cmake-devel git fcitx5 libfcitx5-devel fcitx5-configtool
+        ;;
+    apt)
+        sudo apt install -y build-essential rustc cargo cmake libibus-1.0-dev qtbase5-dev qtbase5-dev-tools libzstd-dev fcitx5 fcitx5-config-qt git
+        ;;
+    *)
+        echo "Unsupported package manager: $pkg"
+        exit 1
+        ;;
+esac
+
 printf "${action} - Now building ${yellow}Openbangla Keyboard ${end}...\n"
+
+if [[ -d "$cache_dir/openbangla-fcitx5" ]]; then
+    printf "${note} - Directory '${orange}openbangla-fcitx5${end}' was located in the '${cache_dir}' directory. Removing it.\n" && sleep 1
+    sudo rm -r "$cache_dir/openbangla-fcitx5"
+fi
 
 git clone --recursive https://github.com/asifakonjee/openbangla-fcitx5.git "$cache_dir/openbangla-fcitx5" 2>&1 | tee -a "$log" || { printf "${error} - Sorry, could not clone openbangla-fcitx5 repository\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
 sleep 1
