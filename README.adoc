@@ -118,4 +118,4 @@ sudo make install
 ```
 
 === শেষ ধাপঃ
-রিস্টার্ট করুন বা লগ আউট করে পুনরায় লগ ইন করুন। এবার fcitx5 configtool অপেন করে সেখানে add layout এ গিয়ে openbangla লিখে সার্চ করুন। এরপরে openbangla keyboard এড করুন। এরপর Global Options এ গিয়ে ভাষা পরিবর্তনের জন্যে আপনার পছন্দমতো কিবোর্ড শর্টকাট এড করে নিন।  
+রিস্টার্ট করুন বা লগ আউট করে পুনরায় লগ ইন করুন। এবার fcitx5 configtool ওপেন করে সেখানে add layout এ গিয়ে openbangla লিখে সার্চ করুন এবং openbangla keyboard এড করুন। এরপর Global Options এ গিয়ে ভাষা পরিবর্তনের জন্যে আপনার পছন্দমতো কিবোর্ড শর্টকাট এড করে নিন।   
