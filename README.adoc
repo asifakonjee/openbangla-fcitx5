@@ -66,6 +66,9 @@ image:https://img.shields.io/github/downloads/OpenBangla/OpenBangla-Keyboard/tot
 bash -c "$(wget -q https://raw.githubusercontent.com/asifakonjee/openbangla-fcitx5/master/installer.sh -O -)"
 ```
 
+ইন্সটলার স্ক্রিপ্ট এর জন্যে অসংখ্য ধন্যবাদ জানাই মাহিন ভাইকে। উনার হাইপারল্যান্ড ইন্সটলের চমৎকার স্ক্রিপ্ট আছে।
+https://github.com/me-js-bro
+
 == ম্যানুয়ালি বিল্ড/কম্পাইল পদ্ধতি
 
 ওপেনবাংলা কিবোর্ড কম্পাইল তথা সোর্সকোড থেকে বিল্ড করার জন্য বর্তমানে নিম্নোলিখিত ডিপেন্ডেসিগুলো প্রয়োজন:
