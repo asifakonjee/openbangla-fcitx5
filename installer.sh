@@ -83,7 +83,7 @@ case "$pkg" in
         sudo zypper in -y libQt5Core-devel libQt5Widgets-devel libQt5Network-devel libzstd-devel libzstd1 cmake make ninja rust ibus-devel ibus clang gcc patterns-devel-base-devel_basis git fcitx5-devel fcitx5 fcitx5-configtool
         ;;
     xbps-install)
-        sudo xbps-install -y base-devel make cmake rust cargo qt5-declarative-devel libzstd-devel qt5-devel cmake-devel git fcitx5 libfcitx5-devel fcitx5-configtool
+        sudo xbps-install -y base-devel make cmake rust cargo qt5-declarative-devel libzstd-devel qt5-devel git fcitx5 libfcitx5-devel fcitx5-configtool
         ;;
     apt)
         sudo apt install -y build-essential rustc cargo cmake libibus-1.0-dev qtbase5-dev qtbase5-dev-tools libzstd-dev fcitx5 fcitx5-config-qt git
