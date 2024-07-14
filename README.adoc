@@ -96,7 +96,7 @@ sudo dnf install @buildsys-build rust cargo cmake qt5-qtdeclarative-devel ibus-d
 === আর্চলিনাক্স ভিত্তিক
 আর্চলিনাক্স ভিত্তিক সিস্টেমে ডিপেন্ডেসিগুলো ইনস্টলের কমান্ড:
 ```bash
-sudo pacman -S base-devel rust cmake qt5-base libibus zstd fcit5 fcitx5-configtool git
+sudo pacman -S base-devel rust cmake qt5-base libibus zstd fcitx5 fcitx5-configtool git
 ```
 
 === ওপেনসুস ভিত্তিক
