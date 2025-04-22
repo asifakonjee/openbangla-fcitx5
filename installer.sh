@@ -87,6 +87,28 @@ case "$pkg" in
         ;;
     apt)
         sudo apt install -y build-essential rustc cargo cmake libibus-1.0-dev qtbase5-dev qtbase5-dev-tools libzstd-dev libfcitx5core-dev fcitx5 fcitx5-config-qt git
+        
+        
+        ### Rust upgrade for apt ###
+        printf "${note}\n* Detected Debian-based system. Ensuring Rust is up-to-date via rustup...\n"
+
+        # Remove old system Rust
+        sudo apt remove -y rustc cargo
+
+        # Install rustup
+        if ! command -v rustup &>/dev/null; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source "$HOME/.cargo/env"
+        fi
+
+        # Ensure rustup is in PATH
+        export PATH="$HOME/.cargo/bin:$PATH"
+
+        # Update to latest stable Rust
+        rustup install stable
+        rustup default stable
+
+        printf "${done}\n==> Rust has been installed via rustup (version: $(rustc --version))\n"
         ;;
     *)
         echo "Unsupported package manager: $pkg"
