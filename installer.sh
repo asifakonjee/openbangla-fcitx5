@@ -132,7 +132,7 @@ if [[ -d "$cache_dir/openbangla-keyboard" ]]; then
 fi
 
 # Clone repository
-git clone --recursive https://github.com/asifakonjee/openbangla-fcitx5.git "$cache_dir/openbangla-keyboard" 2>&1 | tee -a "$log" || {
+git clone --recursive https://github.com/asifakonjee/OpenBangla-Keyboard.git "$cache_dir/openbangla-keyboard" 2>&1 | tee -a "$log" || {
     printf "${error} - Could not clone OpenBangla Keyboard repository\n"
     exit 1
 }
