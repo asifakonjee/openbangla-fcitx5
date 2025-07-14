@@ -135,8 +135,19 @@ mkdir build 2>&1 | tee -a "$log" || { printf "${error} - Unable to create build 
 
 cd build || { printf "${error} - Unable to change directory\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
 
-# Run CMake to configure the build
-cmake .. 2>&1 | tee -a "$log" || { printf "${error} - CMake configuration failed\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
+# Run CMake
+if [[ "$pkg" == "pacman" ]]; then
+    cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 2>&1 | tee -a "$log" || {
+        printf "${error}\n! CMake configuration failed\n"
+        exit 1
+    }
+else
+    cmake .. 2>&1 | tee -a "$log" || {
+        printf "${error}\n! CMake configuration failed\n"
+        exit 1
+    }
+fi
+
 
 # Build the project
 make 2>&1 | tee -a "$log" || { printf "${error} - Build failed\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
