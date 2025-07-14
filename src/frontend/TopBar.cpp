@@ -34,11 +34,7 @@
 #include "LayoutConverter.h"
 #include "AutoCorrectDialog.h"
 #include "ui_TopBar.h"
-#ifndef NO_UPDATE_CHECK
-# include "QSimpleUpdater.h"
-#endif
 
-static const QString DEFS_URL = "https://raw.githubusercontent.com/OpenBangla/OpenBangla-Keyboard/master/UPDATES.json";
 
 TopBar::TopBar(bool darkIcon, QWidget *parent) :
   QMainWindow(parent),
@@ -48,9 +44,9 @@ TopBar::TopBar(bool darkIcon, QWidget *parent) :
   gLayout = new Layout();
 
   if(darkIcon) {
-    m_iconTheme = "white";
-  } else {
     m_iconTheme = "black";
+  } else {
+    m_iconTheme = "white";
   }
 
   /* Dialogs */
@@ -65,7 +61,7 @@ TopBar::TopBar(bool darkIcon, QWidget *parent) :
   });
 
   auto set_icon = [&](QPushButton* obj, QString icon) {
-    obj->setIcon(QIcon(":/images/" + m_iconTheme + "/" + icon + ".png"));
+    obj->setIcon(QIcon(":/images/" + m_iconTheme + "/" + icon + ".svg"));
   };
   set_icon(ui->buttonSetLayout, "layouts");
   set_icon(ui->buttonViewLayout, "layout");
@@ -86,14 +82,6 @@ TopBar::TopBar(bool darkIcon, QWidget *parent) :
     // Update the counter to show only the message for the first three times
     gSettings->setTrayInfoCount(count + 1);
   }
-
-#ifndef NO_UPDATE_CHECK
-  updater = QSimpleUpdater::getInstance();
-
-  if (gSettings->getUpdateCheck()) {
-    checkForUpdate();
-  }
-#endif
 }
 
 TopBar::~TopBar() {
@@ -111,6 +99,7 @@ TopBar::~TopBar() {
 void TopBar::SetupTopBar() {
   this->setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
   this->setFixedSize(QSize(this->width(), this->height()));
+  this->setAttribute(Qt::WA_TranslucentBackground);
 
   if (gSettings->getTopBarWindowPosition() == QPoint(0, 0)) {
     int width = this->frameGeometry().width();
@@ -126,15 +115,6 @@ void TopBar::SetupTopBar() {
   } else {
     move(gSettings->getTopBarWindowPosition());
   }
-}
-
-void TopBar::checkForUpdate() {
-#ifndef NO_UPDATE_CHECK
-  updater->setModuleVersion(DEFS_URL, PROJECT_VERSION);
-  updater->setNotifyOnUpdate(DEFS_URL, true);
-  updater->setDownloaderEnabled(DEFS_URL, false);
-  updater->checkForUpdates(DEFS_URL);
-#endif
 }
 
 void TopBar::SetupPopupMenus() {
@@ -169,18 +149,10 @@ void TopBar::SetupPopupMenus() {
   iconMenuAbout = new QAction("About OpenBangla Keyboard", this);
   connect(iconMenuAbout, SIGNAL(triggered()), this, SLOT(iconMenuAbout_clicked()));
 
-  iconMenuUpdate = new QAction("Check for Updates", this);
-  connect(iconMenuUpdate, &QAction::triggered, [=]() {
-    checkForUpdate();
-  });
-
   iconMenu = new QMenu(this);
   iconMenu->addAction(iconMenuHide);
   iconMenu->addAction(iconMenuLayout);
   iconMenu->addAction(iconMenuAbout);
-#ifndef NO_UPDATE_CHECK
-  iconMenu->addAction(iconMenuUpdate);
-#endif
 }
 
 void TopBar::SetupTrayIcon() {

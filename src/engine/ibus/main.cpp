@@ -17,10 +17,17 @@ static Suggestion *suggestion = nullptr;
 static bool altGr = false;
 
 void update_with_settings() {
-  riti_config_set_layout_file(config, gSettings->getLayoutPath().toStdString().data());
+  if(!riti_config_set_layout_file(config, gSettings->getLayoutPath().toStdString().data())) {
+    LOG_ERROR("[IM:iBus]: Failed to set layout file: %s\n", gSettings->getLayoutPath().toStdString().data());
+  }
+
   riti_config_set_suggestion_include_english(config, gSettings->getSuggestionIncludeEnglish());
   riti_config_set_phonetic_suggestion(config, gSettings->getShowCWPhonetic());
-  riti_config_set_database_dir(config, DatabasePath().toStdString().data());
+
+  if(!riti_config_set_database_dir(config, DatabasePath().toStdString().data())) {
+    LOG_ERROR("[IM:iBus]: Failed to set database directory: %s\n", DatabasePath().toStdString().data());
+  }
+  
   riti_config_set_fixed_suggestion(config, gSettings->getShowPrevWinFixed());
   riti_config_set_fixed_auto_vowel(config, gSettings->getAutoVowelFormFixed());
   riti_config_set_fixed_auto_chandra(config, gSettings->getAutoChandraPosFixed());
@@ -249,7 +256,13 @@ gboolean engine_process_key(guint keyval, guint keycode, guint state) {
     modifier |= MODIFIER_ALT_GR;
   }
 
-  suggestion = riti_get_suggestion_for_key(ctx, key, modifier);
+  int index = 0;
+
+  if (riti_context_ongoing_input_session(ctx) && !riti_suggestion_is_lonely(suggestion)) {
+    index = ibus_lookup_table_get_cursor_pos(table);
+  }
+
+  suggestion = riti_get_suggestion_for_key(ctx, key, modifier, index);
 
   if(!riti_suggestion_is_empty(suggestion)) {
     engine_update_lookup_table();
