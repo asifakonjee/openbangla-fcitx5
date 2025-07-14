@@ -1,7 +1,10 @@
 #!/bin/env bash
 
-#### OpenBangla Keyboard for fcitx5 Installation Script by ####
-#### Js Bro ( https://github.com/me-js-bro ) ####
+#### OpenBangla Keyboard (Develop Branch) for fcitx5 Installation Script ####
+#### ( https://github.com/asifakonjee ) ####
+
+# fcitx5.sh ( install script with fcitx5 )
+
 # color defination
 red="\e[1;31m"
 green="\e[1;32m"
@@ -22,13 +25,17 @@ error="[${red} ERROR ${end}]"
 
 display_text() {
     cat << "EOF"
-      ___                       ____                        _                _  __             _                             _ 
-     / _ \  _ __    ___  _ __  | __ )   __ _  _ __    __ _ | |  __ _        | |/ / ___  _   _ | |__    ___    __ _  _ __  __| |
-    | | | || '_ \  / _ \| '_ \ |  _ \  / _` || '_ \  / _` || | / _` | _____ | ' / / _ \| | | || '_ \  / _ \  / _` || '__|/ _` |
-    | |_| || |_) ||  __/| | | || |_) || (_| || | | || (_| || || (_| ||_____|| . \|  __/| |_| || |_) || (_) || (_| || |  | (_| |
-     \___/ | .__/  \___||_| |_||____/  \__,_||_| |_| \__, ||_| \__,_|       |_|\_\\___| \__, ||_.__/  \___/  \__,_||_|   \__,_|
-           |_|                                       |___/                              |___/                                     
-    
+  ____                   ___                    __
+ / __ \ ___  ___  ___   / _ ) ___ _ ___  ___ _ / /___ _
+/ /_/ // _ \/ -_)/ _ \ / _  |/ _ `// _ \/ _ `// // _ `/
+\____// .__/\__//_//_//____/ \_,_//_//_/\_, //_/ \_,_/
+     /_/                               /___/
+   __ __            __                      __
+  / //_/___  __ __ / /  ___  ___ _ ____ ___/ /
+ / ,<  / -_)/ // // _ \/ _ \/ _ `// __// _  /
+/_/|_| \__/ \_, //_.__/\___/\_,_//_/   \_,_/
+           /___/
+
 EOF
 }
 
@@ -39,13 +46,11 @@ printf " \n \n"
 ###------ Startup ------###
 
 # finding the presend directory and log file
-present_dir=`pwd`
+present_dir="$(dirname "$(realpath "$0")")"
 cache_dir="$present_dir/.cache"
 
 # log directory
-log_dir="$present_dir/.openbangla-fcitx5"
-log="$log_dir"/Install.log
-mkdir -p "$log_dir"
+log="$present_dir/Install.log"
 if [[ ! -f "$log" ]]; then
     touch "$log"
 fi
@@ -62,33 +67,36 @@ elif command -v xbps-install &> /dev/null; then
     pkg="xbps-install"
 elif command -v apt &> /dev/null; then
     pkg="apt"
+elif command -v eopkg &> /dev/null; then
+    pkg="eopkg"
+elif command -v apk &> /dev/null; then
+    pkg="apk"
 else
-    echo "No supported package manager found!"
+    printf "${error}\n! No supported package manager found!\n"
     exit 1
 fi
 
 
 # Print message about installing necessary packages
-printf "${attention} - Installing necessary packages using ${pkg} \n"
+printf "${attention}\n!! Installing necessary packages using ${pkg} \n"
 
 # Install required packages based on the detected package manager
 case "$pkg" in
     pacman)
-        sudo pacman -S --noconfirm base-devel rust cmake qt5-base libibus zstd fcitx5 fcitx5-configtool fcitx5-qt fcitx5-gtk git
+        sudo pacman -S --noconfirm base-devel rust cmake qt5-base zstd fcitx5 fcitx5-configtool fcitx5-qt fcitx5-gtk git
         ;;
     dnf)
-        sudo dnf install -y @development-tools rust cargo cmake qt5-qtdeclarative-devel ibus-devel libzstd-devel git fcitx5 fcitx5-configtool fcitx5-devel fcitx5-qt5
+        sudo dnf install -y @development-tools rust cargo cmake qt5-qtdeclarative-devel libzstd-devel fcitx5 fcitx5-configtool fcitx5-devel fcitx5-qt5 git
         ;;
     zypper)
-        sudo zypper in -y libQt5Core-devel libQt5Widgets-devel libQt5Network-devel libzstd-devel libzstd1 cmake make ninja rust ibus-devel ibus clang gcc patterns-devel-base-devel_basis git fcitx5-devel fcitx5 fcitx5-configtool
+        sudo zypper in -y libQt5Core-devel libQt5Widgets-devel libQt5Network-devel libzstd-devel libzstd1 cmake make ninja rust clang gcc patterns-devel-base-devel_basis fcitx5-devel fcitx5 fcitx5-configtool git
         ;;
     xbps-install)
-        sudo xbps-install -y base-devel make cmake rust cargo qt5-declarative-devel libzstd-devel qt5-devel git ibus ibus-devel fcitx5 libfcitx5-devel fcitx5-configtool
+        sudo xbps-install -y base-devel make cmake rust cargo qt5-declarative-devel libzstd-devel qt5-devel fcitx5 libfcitx5-devel fcitx5-configtool git
         ;;
     apt)
-        sudo apt install -y build-essential rustc cargo cmake libibus-1.0-dev qtbase5-dev qtbase5-dev-tools libzstd-dev libfcitx5core-dev fcitx5 fcitx5-config-qt git
-        
-        
+        sudo apt install -y build-essential rustc cargo curl cmake qtbase5-dev qtbase5-dev-tools libzstd-dev libfcitx5core-dev fcitx5 fcitx5-config-qt git
+
         ### Rust upgrade for apt ###
         printf "${note}\n* Detected Debian-based system. Ensuring Rust is up-to-date via rustup...\n"
 
@@ -111,49 +119,76 @@ case "$pkg" in
         printf "${done}\n==> Rust has been installed via rustup (version: $(rustc --version))\n"
         ;;
     *)
-        echo "Unsupported package manager: $pkg"
+        printf "${error}\n! Unsupported package manager: $pkg\n"
         exit 1
         ;;
 esac
 
-sleep 1 && clear
+printf "${action}\n==> Now building ${orange}Openbangla Keyboard${end}...\n"
 
-printf "${action} - Now building ${yellow}Openbangla Keyboard ${end}...\n"
-
-if [[ -d "$cache_dir/openbangla-fcitx5" ]]; then
-    printf "${note} - Directory '${orange}openbangla-fcitx5${end}' was located in the '${cache_dir}' directory. Removing it.\n" && sleep 1
-    sudo rm -r "$cache_dir/openbangla-fcitx5"
+if [[ -d "$cache_dir/openbangla-keyboard" ]]; then
+    printf "${note}\n* Directory '${orange}openbangla-keyboard${end}' was located in the '${cache_dir}' directory. Removing it.\n" && sleep 1
+    sudo rm -r "$cache_dir/openbangla-keyboard"
 fi
 
-git clone --recursive https://github.com/asifakonjee/openbangla-fcitx5.git "$cache_dir/openbangla-fcitx5" 2>&1 | tee -a "$log" || { printf "${error} - Sorry, could not clone openbangla-fcitx5 repository\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
+# Clone repository
+git clone --recursive https://github.com/asifakonjee/OpenBangla-Keyboard.git "$cache_dir/openbangla-keyboard" 2>&1 | tee -a "$log" || {
+    printf "${error} - Could not clone OpenBangla Keyboard repository\n"
+    exit 1
+}
 
 # Move into the cloned directory
-cd "$cache_dir/openbangla-fcitx5" || { printf "${error} - Unable to change directory\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
+cd "$cache_dir/openbangla-keyboard" || {
+    printf "${error}\n! Unable to change directory\n"
+    exit 1
+}
 
-# Create build directory
-mkdir build 2>&1 | tee -a "$log" || { printf "${error} - Unable to create build directory\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
+# Checkout the develop branch
+git checkout develop 2>&1 | tee -a "$log" || {
+    printf "${error}\n! Unable to checkout develop branch\n"
+    exit 1
+}
 
-cd build || { printf "${error} - Unable to change directory\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
+# Update submodules
+git submodule update --init --recursive 2>&1 | tee -a "$log" || {
+    printf "${error}\n! Unable to update git submodules\n"
+    exit 1
+}
+
+# Create and enter the build directory
+mkdir build && cd build || {
+    printf "${error}\n! Unable to create and change to build directory\n"
+    exit 1
+}
 
 # Run CMake
 if [[ "$pkg" == "pacman" ]]; then
-    cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 2>&1 | tee -a "$log" || {
+    cmake .. -DCMAKE_INSTALL_PREFIX="/usr" -DENABLE_FCITX=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5 2>&1 | tee -a "$log" || {
         printf "${error}\n! CMake configuration failed\n"
         exit 1
     }
 else
-    cmake .. 2>&1 | tee -a "$log" || {
+    cmake .. -DCMAKE_INSTALL_PREFIX="/usr" -DENABLE_FCITX=ON 2>&1 | tee -a "$log" || {
         printf "${error}\n! CMake configuration failed\n"
         exit 1
     }
 fi
 
-
 # Build the project
-make 2>&1 | tee -a "$log" || { printf "${error} - Build failed\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
+make -j$(nproc) 2>&1 | tee -a "$log" || {
+    printf "${error}\n! Build failed\n"
+    exit 1
+}
 
 # Install the project
-sudo make install 2>&1 | tee -a "$log" || { printf "${error} - Installation failed\n" 2>&1 | tee -a >(sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$log"); exit 1; }
+sudo make install 2>&1 | tee -a "$log" || {
+    printf "${error}\n! Installation failed\n"
+    exit 1
+}
+
+printf "${done}\n==> Installation completed successfully!\n"
+
+exit 0
 
 printf "\n${attention} - Now installing some fonts (Bangla)\n" && sleep 1 && clear
 if git clone --depth=1 https://github.com/asifakonjee/bangla-fonts.git "$cache_dir/Fonts" 2>&1 | tee -a "$log"; then
