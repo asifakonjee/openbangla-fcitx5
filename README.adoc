@@ -20,7 +20,7 @@ endif::[]
 
 ++++
 <p align="center">
-<img src="https://github.com/asifakonjee/openbangla-fcitx5/raw/master/data/128.png"></p>
+<img src="https://github.com/asifakonjee/openbangla-fcitx5/raw/main/data/128.png"></p>
 ++++
 
 
