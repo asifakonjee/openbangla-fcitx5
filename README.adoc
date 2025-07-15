@@ -1,5 +1,5 @@
 //Ref : https://gist.github.com/dcode/0cfbf2699a1fe9b46ff04c41721dda74
-= OpenBangla Keyboard (OBK)
+= ওপেনবাংলা কিবোর্ড
 ifdef::env-github[]
 :imagesdir:
  https://gist.githubusercontent.com/path/to/gist/revision/dir/with/all/images
@@ -15,171 +15,66 @@ endif::[]
 :toc:
 :toc-placement!:
 
-++++
-<p align=right>(<a href="README.bn.adoc"><b>বাংলায় পড়ুন</b></a>)</p>
-++++
 
 //HTML for formating the logo
 
 ++++
 <p align="center">
-<img src="https://github.com/OpenBangla/OpenBangla-Keyboard/raw/master/data/128.png">
-</p>
+<img src="https://github.com/OpenBangla/OpenBangla-Keyboard/raw/master/data/128.png"></p>
 ++++
 
 
-*OpenBangla Keyboard* is an open source, Unicode compliant, Bangla input method for GNU/Linux systems.
-It's a full-fledged Bangla input method with typing automation tools, includes many famous typing methods such as Avro Phonetic,
-Probhat, Munir Optima, National (Jatiya) etc.
+*ওপেনবাংলা কিবোর্ড* হচ্ছে গ্নু/লিনাক্স সিস্টেমের জন্য একটি উন্মুক্ত এবং ইউনিকোড-সমর্থিত স্বয়ংসম্পূর্ণ বাংলা লেখার সফটওয়্যার।
 
-Most features of https://www.omicronlab.com/avro-keyboard.html[Avro Keyboard] are present in OpenBangla Keyboard.
-So Avro Keyboard users will feel right at home in Linux with OpenBangla Keyboard.
+গতিশীল লেখার উদ্দেশ্যে এতে বিভিন্ন শুদ্ধিকরণ ও স্বয়ংক্রিয় টাইপিং ব্যবস্থা রয়েছে, এবং অভ্র ফোনেটিক, প্রভাত, মুনীর অপ্টিমা, জাতীয়, ইত্যাদি সুপ্রচলিত লেআউটগুলো উপস্থিত আছে।
+
+https://www.omicronlab.com/avro-keyboard.html[অভ্র কীবোর্ডের] অধিকাংশ ফিচার ওপেনবাংলা কিবোর্ডে রয়েছে, তাই অভ্রর ব্যবহারকারীরা লিনাক্সে এসে এখানে সহজেই স্বাচ্ছন্দ্য বোধ করবেন।
 
 image:https://github.com/OpenBangla/OpenBangla-Keyboard/workflows/CI/badge.svg[CI, link=https://github.com/OpenBangla/OpenBangla-Keyboard/actions?query=workflow%3ACI+branch%3Amaster] {nbsp}
 image:https://img.shields.io/github/downloads/OpenBangla/OpenBangla-Keyboard/total.svg?label=GitHub%20Downloads[Github Downloads, link=https://img.shields.io/github/downloads/OpenBangla/OpenBangla-Keyboard/total.svg?label=GitHub%20Downloads] {nbsp}
 
-CAUTION: This project is powered by github 🌟s. Go ahead and *star* it please!
 
-🚧 🚧 *Ongoing developments happen on the https://github.com/OpenBangla/OpenBangla-Keyboard/tree/develop[`develop`] branch.* 🚧 🚧
-
-toc::[]
-
-
-== Features
-* Features a __Top Bar__ like Avro Keyboard for easy configuration.
-* Layout Viewer
-* Phonetic Keyboard Layout (Avro Phonetic)
-  ** 100% compatibility with current Avro Phonetic scheme.
-  ** Dictionary support can predict and suggest phonetically similar words with correct spelling on the fly.
-  ** Autocorrect feature for numerous commonly mistyped words.
-  ** Autocorrect support brings commonly used English words to Bangla (like, Facebook, download etc.) even with their original English spelling.
-  ** User can add and edit autocorrect entries.
-  ** Support for preview window to see originally typed text right under the cursor.
-* Fixed Keyboard Layout
-  ** OpenBangla Keyboard comes with Probhat, Munir Optima, Avro Easy, Bornona, National (Jatiya) keyboard layouts out of the box.
-  ** OpenBangla Keyboard supports Avro Keyboard Layout files (version 5).
-* Typing Automation tools for Fixed Keyboard layout
-  ** Automatic vowel forming.
-  ** Old style "Reph".
-  ** Traditional "-Kar" joining.
-  ** Automatic "Chandrabindu" position fixing.
+== ফিচারসমূহ
+* অভ্র কিবোর্ডের মত _টপ বার_, কনফিগারেশন হাতের কাছেই।
+* লেআউট প্রদর্শন উইন্ডো
+* ফোনেটিক কিবোর্ড লেআউট (অভ্র ফোনেটিক)
+  ** অভ্র ফোনেটিক টাইপিং পদ্ধতির সঙ্গে শতভাগ সামঞ্জস্যপূর্ণ।
+  ** ডিকশনারি ফিচারের সাহায্যে স্বয়ংক্রিয়ভাবে কাছাকাছি উচ্চারণের অন্যান্য শব্দ সঠিক বানাসহ প্রদর্শন করে।
+  ** প্রচুর প্রচলিত ইংরেজি শব্দসমূহও প্রদর্শন করে (যেমন "ফেসবুক", "ডাউনলোড")।
+  ** অটোকারেক্ট ফিচারের সাহায্যে প্রচুর সাধারণ ভুল বানানের সঠিক রুপটি প্রদর্শন করে।
+  ** ব্যবহারকারী নিজের পছন্দমত অটোকারেক্ট শব্দ যোগ করতে পারেন।
+  ** মূল টাইপ করা শব্দের সম্ভাব্য বিকল্প বা কাছাকাছি বানানের শব্দসমূহ প্রিভিউ উইন্ডোতে প্রদর্শন করে।
+* ফিক্সড কিবোর্ড লেআউট
+  ** ওপেনবাংলা কিবোর্ডে প্রভাত, মুনীর অপ্টিমা, অভ্র ইজি, বর্ণনা, জাতীয় কিবোর্ড লেআউট অন্তর্ভূক্ত আছে।
+  ** অভ্র কিবোর্ড লেআউট ফাইল ফরম্যাট (৫ম সংস্করণ) সমর্থন করে।
+* স্বয়ংক্রিয় টাইপিং সংশোধন সুবিধাসমূহ
+  ** স্বয়ংক্রিয় স্বরবর্ণ স্থাপন।
+  ** পুরাতন রীতির রেফ।
+  ** পূর্বপ্রচলিত -কার সংযোগ রীতি।
+  ** চন্দ্রবিন্দুর অবস্থান সংশোধন।
 
 
-== Installation
+== ইনস্টল পদ্ধতি
 
-IMPORTANT: If you had installed OpenBangla Keyboard 1.5.1 or earlier version, https://github.com/OpenBangla/OpenBangla-Keyboard/wiki/Uninstalling-OpenBangla-Keyboard[please uninstall it first.]
+মূলত এই রিপোজিটরিটির স্ক্রিপ্ট দ্বারা fcitx5 এর সাথে ব্যবহারের জন্যে আমার ব্যক্তিগত পছন্দের লোগোসহ ওপেনবাংলা কিবোর্ড সহজে ইন্সটল করতে পারবেন।
 
-Open your terminal and run this command on your bash shell. NB : It has to be **BASH**, otherwise it won't work.
-```bash
-bash -c "$(wget -q https://raw.githubusercontent.com/OpenBangla/OpenBangla-Keyboard/master/tools/install.sh -O -)"
+
+== সহজ ইন্সটল পদ্ধতি
+
+=== fcitx5 এর জন্যে
+টার্মিনাল ওপেন করে নিচের কমান্ডটি কপি করে টার্মিনালে পেস্ট করুনঃ
+```
+bash -c "$(wget -q https://raw.githubusercontent.com/asifakonjee/openbangla-fcitx5/master/installer.sh -O -)"
 ```
 
-If this does not workout for you please create an https://github.com/OpenBangla/OpenBangla-Keyboard/issues[Issue]. While we look into the problem you can check the https://github.com/OpenBangla/OpenBangla-Keyboard/wiki/Installing-OpenBangla-Keyboard[Wiki] for Distrowise/Distro-specific Install Instructions.
+== শেষ ধাপ
 
-=== Archlinux and it's derivatives
-TIP: There is a video tutorial about installing OpenBangla Keyboard in Arch Linux. You may check that out from https://youtu.be/C8vnR1AY6sA[here].
+=== fcitx5 এর জন্যে
+রিস্টার্ট করুন বা লগ আউট করে পুনরায় লগ ইন করুন। এবার fcitx5 configtool ওপেন করে সেখানে add layout এ গিয়ে openbangla লিখে সার্চ করুন এবং openbangla keyboard এড করুন। এরপর Global Options এ গিয়ে ভাষা পরিবর্তনের জন্যে আপনার পছন্দমতো কিবোর্ড শর্টকাট এড করে নিন। কেডিই প্লাজমা ডেস্কটপ এনভাইরনমেন্টের ক্ষেত্রে এর পাশাপাশি সেটিংসে গিয়ে Virtual Keyboard লিখে সার্চ করুন এবং সেখানে fcitx5 সিলেক্ট করে দিন। এরপরেও যদি ব্রাউজার বা লিব্রে অফিসে বাংলা লিখতে সমস্যা হয় তাহলে নিচের লেখাগুলো কপি করে `` /etc/environment `` ফাইলে এড করে দিনঃ
 
-There are two packages for OpenBangla Keyboard in the Arch User Repository(AUR). Use `openbangla-keyboard` if you want to make and install the package from source. Otherwise, use `openbangla-keyboard-bin` to use the binary package released for Arch and its derivatives by the maintainer. You can install it in one command with your favorite aur helper. Example commands for two popular AUR helpers:
-
-==== `openbangla-keyboard`
-* `$ paru -S openbangla-keyboard`
-* `$ yay -S openbangla-keyboard`
-
-==== `openbangla-keyboard-bin`
-* `$ paru -S openbangla-keyboard-bin`
-* `$ yay -S openbangla-keyboard-bin`
-
-Or install manually:
-```bash
-sudo pacman -S base-devel git
-git clone https://aur.archlinux.org/openbangla-keyboard.git
-cd openbangla-keyboard
-makepkg -risc
 ```
-We also provide a `.pkg.tar.zst` package for Arch Linux which you can download the installation package from https://github.com/OpenBangla/OpenBangla-Keyboard/releases[releases page] and install OpenBangla Keyboard on your system by running the following command:
-```bash
-$ sudo pacman -U package.pkg.tar.zst
+GTK_IM_MODULE=fcitx
+QT_IM_MODULE=fcitx
+XMODIFIERS=@im=fcitx
 ```
 
-=== Others
-You can also install by downloading necessary packages from our https://github.com/OpenBangla/OpenBangla-Keyboard/releases[Releases] page.
-
-=== Finally
-After you have installed OpenBangla Keyboard, you may need to https://github.com/OpenBangla/OpenBangla-Keyboard/wiki/Configuring-Environment[configure your desktop environment].
-
-If this does not work out for you, please create an https://github.com/OpenBangla/OpenBangla-Keyboard/issues[Issue.]
-
-== Community
-We are on https://github.com/OpenBangla/OpenBangla-Keyboard/discussions[Github Discussions] and https://www.facebook.com/openbanglakeyboard[Facebook].
-
-== Compiling on GNU/Linux
-
-OpenBangla Keyboard currently has the following build dependencies:
-
-* GNU GCC 8 (or later) or Clang 7 (or later) compiler
-* Rust 1.34.0 or later
-* GNU Make or Ninja
-* CMake
-* Qt 5.5 or later
-* iBus development library
-* Zstandard compression library (zstd)
-
-=== Ubuntu & Debian derivatives
-On a Ubuntu/Debian system you can easily install them like this:
-```bash
-sudo apt-get install build-essential rustc cargo cmake libibus-1.0-dev qtbase5-dev qtbase5-dev-tools libzstd-dev
-```
-
-=== Fedora
-On a Fedora system you can easily install them like this:
-```bash
-sudo dnf install @buildsys-build rust cargo cmake qt5-qtdeclarative-devel ibus-devel libzstd-devel
-```
-
-=== Arch Linux & it's derivatives
-On a Arch Linux / Arch Based system you can easily install them like this:
-```bash
-sudo pacman -S base-devel rust cmake qt5-base libibus zstd
-```
-
-=== openSUSE
-On openSUSE & derivatives you can easily install them like this:
-```bash
-sudo zypper install libQt5Core-devel libQt5Widgets-devel libQt5Network-devel libzstd-devel libzstd1 cmake make ninja rust ibus-devel ibus clang gcc patterns-devel-base-devel_basis
-```
-
-=== Solus
-On Solus you can easily install them like this:
-```bash
-sudo eopkg install -c system.devel rust qt5-base-devel ibus-devel zstd-devel git
-```
-
-=== Finally
-After you have installed required libraries and binaries, clone this repository and change to the cloned folder:
-```bash
-git clone --recursive https://github.com/OpenBangla/OpenBangla-Keyboard.git
-cd OpenBangla-Keyboard
-```
-
-Then issue the build commands:
-```bash
-mkdir build && cd build
-cmake ..
-make
-sudo make install
-```
-
-
-== Acknowledgements
- * Mehdi Hasan Khan, for originally developing and maintaining Avro Keyboard.
- * Rifat Nabi, for porting Avro Phonetic to Javascript.
- * https://github.com/sarim[Sarim Khan], for writing ibus-avro.
- * https://github.com/saaiful[Saiful Islam], for the icon.
- * https://material.io/resources/icons[Material Design Icons].
- * https://github.com/alex-spataru/QSimpleUpdater[QSimpleUpdater], for providing update mechanism.
-
-
-== License
-This project is licensed under https://opensource.org/licenses/GPL-3.0[GPL 3 Licence].
-
-Made with ❤️ by https://github.com/mominul[Muhammad Mominul Huque] and https://github.com/OpenBangla/OpenBangla-Keyboard/graphs/contributors[✨ contributors ✨]!
