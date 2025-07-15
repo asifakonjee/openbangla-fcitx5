@@ -63,8 +63,8 @@ pub(crate) fn read(file: &mut File) -> Vec<u8> {
 }
 
 /// A meta characters splitted string.
-/// 
-/// Meta characters (`-]~!@#%&*()_=+[{}'\";<>/?|.,।`) are splitted 
+///
+/// Meta characters (`-]~!@#%&*()_=+[{}'\";<>/?|.,।`) are splitted
 /// from a string as preceding and trailing parts.
 #[derive(Debug)]
 pub(crate) struct SplittedString<'a> {
@@ -119,14 +119,14 @@ impl SplittedString<'_> {
         }
     }
 
-    /// Takes a closure to transform preceding and trailing parts. 
+    /// Takes a closure to transform preceding and trailing parts.
     pub(crate) fn map(&mut self, func: impl Fn(&str, &str) -> (String, String)) {
         let (p, t) = (func)(self.preceding.deref(), self.trailing.deref());
         self.preceding = Cow::Owned(p);
         self.trailing = Cow::Owned(t);
     }
 
-    /// Returns trailing meta characters. 
+    /// Returns trailing meta characters.
     pub(crate) fn preceding(&self) -> &str {
         self.preceding.deref()
     }
@@ -165,10 +165,10 @@ pub(crate) fn smart_quoter(mut splitted: SplittedString) -> SplittedString {
     for ch in splitted.preceding().chars() {
         match ch {
             '\'' => {
-                preceding.push_str("‘");
+                preceding.push('‘');
             }
             '"' => {
-                preceding.push_str("“");
+                preceding.push('“');
             }
             _ => preceding.push(ch),
         }
@@ -179,10 +179,10 @@ pub(crate) fn smart_quoter(mut splitted: SplittedString) -> SplittedString {
     for ch in splitted.trailing.chars() {
         match ch {
             '\'' => {
-                trailing.push_str("’");
+                trailing.push('’');
             }
             '"' => {
-                trailing.push_str("”");
+                trailing.push('”');
             }
             _ => trailing.push(ch),
         }
@@ -190,7 +190,8 @@ pub(crate) fn smart_quoter(mut splitted: SplittedString) -> SplittedString {
 
     splitted.preceding = Cow::Owned(preceding);
     splitted.trailing = Cow::Owned(trailing);
-    return splitted;
+
+    splitted
 }
 
 #[cfg(test)]
@@ -219,7 +220,10 @@ mod test {
 
     #[test]
     fn test_splitted_string() {
-        assert_eq!(SplittedString::split("[][][][]", false), ("[][][][]", "", ""));
+        assert_eq!(
+            SplittedString::split("[][][][]", false),
+            ("[][][][]", "", "")
+        );
         assert_eq!(SplittedString::split("t*", false), ("", "t", "*"));
         assert_eq!(SplittedString::split("1", false), ("", "1", ""));
         assert_eq!(
@@ -236,24 +240,57 @@ mod test {
         assert_eq!(SplittedString::split("kt::`", true), ("", "kt", "::`"));
         assert_eq!(SplittedString::split("kt``", false), ("", "kt``", ""));
         assert_eq!(SplittedString::split("kt:``", false), ("", "kt:``", ""));
-        assert_eq!(SplittedString::split("।ঃমেঃ।টাঃ।", false), ("।", "ঃমেঃ।টাঃ", "।"));
+        assert_eq!(
+            SplittedString::split("।ঃমেঃ।টাঃ।", false),
+            ("।", "ঃমেঃ।টাঃ", "।")
+        );
     }
 
     #[test]
     fn test_smart_quoting() {
-        assert_eq!(smart_quoter(SplittedString::split("\"", true)), ("\"".into(), "", "".into()));
+        assert_eq!(
+            smart_quoter(SplittedString::split("\"", true)),
+            ("\"".into(), "", "".into())
+        );
 
-        assert_eq!(smart_quoter(SplittedString::split("'Till", true)), ("‘".into(), "Till", "".into()));
-        assert_eq!(smart_quoter(SplittedString::split("\"Hey", true)), ("“".into(), "Hey", "".into()));
-        assert_eq!(smart_quoter(SplittedString::split("'\"Hey", true)), ("‘“".into(), "Hey", "".into()));
+        assert_eq!(
+            smart_quoter(SplittedString::split("'Till", true)),
+            ("‘".into(), "Till", "".into())
+        );
+        assert_eq!(
+            smart_quoter(SplittedString::split("\"Hey", true)),
+            ("“".into(), "Hey", "".into())
+        );
+        assert_eq!(
+            smart_quoter(SplittedString::split("'\"Hey", true)),
+            ("‘“".into(), "Hey", "".into())
+        );
 
-        assert_eq!(smart_quoter(SplittedString::split("finished'", true)), ("".into(), "finished", "’".into()));
-        assert_eq!(smart_quoter(SplittedString::split("Hey\"", true)), ("".into(), "Hey", "”".into()));
-        assert_eq!(smart_quoter(SplittedString::split("Hey'\"", true)), ("".into(), "Hey", "’”".into()));
+        assert_eq!(
+            smart_quoter(SplittedString::split("finished'", true)),
+            ("".into(), "finished", "’".into())
+        );
+        assert_eq!(
+            smart_quoter(SplittedString::split("Hey\"", true)),
+            ("".into(), "Hey", "”".into())
+        );
+        assert_eq!(
+            smart_quoter(SplittedString::split("Hey'\"", true)),
+            ("".into(), "Hey", "’”".into())
+        );
 
-        assert_eq!(smart_quoter(SplittedString::split("'Awkward'", true)), ("‘".into(), "Awkward", "’".into()));
-        assert_eq!(smart_quoter(SplittedString::split("\"Nevertheless\"", true)), ("“".into(), "Nevertheless", "”".into()));
+        assert_eq!(
+            smart_quoter(SplittedString::split("'Awkward'", true)),
+            ("‘".into(), "Awkward", "’".into())
+        );
+        assert_eq!(
+            smart_quoter(SplittedString::split("\"Nevertheless\"", true)),
+            ("“".into(), "Nevertheless", "”".into())
+        );
 
-        assert_eq!(smart_quoter(SplittedString::split("\"'Quotation'\"", true)), ("“‘".into(), "Quotation", "’”".into()));
+        assert_eq!(
+            smart_quoter(SplittedString::split("\"'Quotation'\"", true)),
+            ("“‘".into(), "Quotation", "’”".into())
+        );
     }
 }

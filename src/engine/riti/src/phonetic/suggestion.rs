@@ -2,70 +2,35 @@
 
 use ahash::RandomState;
 use okkhor::parser::Parser;
-use regex::Regex;
 use std::collections::HashMap;
+use upodesh::suggest::Suggest;
 
 use crate::config::Config;
 use crate::data::Data;
-use crate::phonetic::regex::parse;
 use crate::suggestion::Rank;
-use crate::utility::{push_checked, Utility, smart_quoter, SplittedString};
+use crate::utility::{push_checked, smart_quoter, SplittedString, Utility};
 
 pub(crate) struct PhoneticSuggestion {
     pub(crate) suggestions: Vec<Rank>,
     // Phonetic buffer. It's used to avoid allocations
     // for phonetic conversion every time.
     pbuffer: String,
-    // Regex buffer. It's used to avoid allocations
-    // for regex conversion every time.
-    regex: String,
     // Cache for storing dictionary searches.
     cache: HashMap<String, Vec<Rank>, RandomState>,
     phonetic: Parser,
-    table: HashMap<&'static str, &'static [&'static str], RandomState>,
+    dict: Suggest,
     // The user's auto-correct entries.
     pub(crate) user_autocorrect: HashMap<String, String, RandomState>,
 }
 
 impl PhoneticSuggestion {
     pub(crate) fn new(user_autocorrect: HashMap<String, String, RandomState>) -> Self {
-        let table: Vec<(&str, &[&str])> = vec![
-            ("a", &["a", "aa", "e", "oi", "o", "nya", "y"]),
-            ("b", &["b", "bh"]),
-            ("c", &["c", "ch", "k"]),
-            ("d", &["d", "dh", "dd", "ddh"]),
-            ("e", &["i", "ii", "e", "y"]),
-            ("f", &["ph"]),
-            ("g", &["g", "gh", "j"]),
-            ("h", &["h"]),
-            ("i", &["i", "ii", "y"]),
-            ("j", &["j", "jh", "z"]),
-            ("k", &["k", "kh"]),
-            ("l", &["l"]),
-            ("m", &["h", "m"]),
-            ("n", &["n", "nya", "nga", "nn"]),
-            ("o", &["a", "u", "uu", "oi", "o", "ou", "y"]),
-            ("p", &["p", "ph"]),
-            ("q", &["k"]),
-            ("r", &["rri", "h", "r", "rr", "rrh"]),
-            ("s", &["s", "sh", "ss"]),
-            ("t", &["t", "th", "tt", "tth", "khandatta"]),
-            ("u", &["u", "uu", "y"]),
-            ("v", &["bh"]),
-            ("w", &["o"]),
-            ("x", &["e", "k"]),
-            ("y", &["i", "y"]),
-            ("z", &["h", "j", "jh", "z"]),
-        ];
-        let table = table.into_iter().collect();
-
         PhoneticSuggestion {
             suggestions: Vec::with_capacity(10),
             pbuffer: String::with_capacity(60),
-            regex: String::with_capacity(1024),
             cache: HashMap::with_capacity_and_hasher(20, RandomState::new()),
             phonetic: Parser::new_phonetic(),
-            table,
+            dict: Suggest::new(),
             user_autocorrect,
         }
     }
@@ -128,8 +93,7 @@ impl PhoneticSuggestion {
     pub(crate) fn suggest_only_phonetic(&mut self, term: &str) -> String {
         let string = SplittedString::split(term, false);
 
-        self.phonetic
-            .convert_into(string.word(), &mut self.pbuffer);
+        self.phonetic.convert_into(string.word(), &mut self.pbuffer);
 
         format!(
             "{}{}{}",
@@ -150,7 +114,7 @@ impl PhoneticSuggestion {
         let mut typed_added = false;
 
         // Convert preceding and trailing meta characters into Bengali(phonetic representation).
-        string.map(|p,t| (self.phonetic.convert(p), self.phonetic.convert(t)));
+        string.map(|p, t| (self.phonetic.convert(p), self.phonetic.convert(t)));
 
         // Smart Quoting feature
         if config.get_smart_quote() {
@@ -163,28 +127,70 @@ impl PhoneticSuggestion {
         if !config.get_ansi_encoding() {
             if let Some(emoji) = data.get_emoji_by_emoticon(term) {
                 // Add the emoticon
-                // Sometimes the emoticon is captured as preceding meta characters and already included.
-                if term != string.preceding() {
-                    self.suggestions.push(Rank::last_ranked(term.to_owned(), 1));
-                }
                 self.suggestions.push(Rank::emoji(emoji.to_owned()));
+                // Add the full term as the last ranked suggestion.
+                self.suggestions.push(Rank::last_ranked(term.to_owned(), 1));
                 // Mark that we have added the typed text already (as the emoticon).
                 typed_added = true;
-            } else if let Some(emojis) = data.get_emoji_by_name(string.word()) {
-                // Emoji addition with it's name
-                // Add preceding and trailing meta characters.
-                let emojis = emojis.zip(1..).map(|(s, r)| {
-                    Rank::emoji_ranked(
-                        format!("{}{}{}", string.preceding(), s, string.trailing()),
-                        r,
-                    )
-                });
-                self.suggestions.extend(emojis);
+            } else {
+                // Emoji addition with it's English name
+                if let Some(emojis) = data.get_emoji_by_name(string.word()) {
+                    let emojis = emojis
+                        .zip(1..)
+                        .map(|(s, r)| Rank::emoji_ranked(s.to_owned(), r));
+                    self.suggestions.extend(emojis);
+                }
+
+                // Emoji addition with Bengali name
+                let mut bn_emojis = Vec::with_capacity(10);
+
+                for word in self.suggestions.iter() {
+                    if let Some(emojis) = data.get_emoji_by_bengali(word.to_string()) {
+                        let emojis = emojis
+                            .zip(1..)
+                            .map(|(s, r)| Rank::emoji_ranked(s.to_owned(), r));
+                        bn_emojis.extend(emojis);
+                    }
+                }
+
+                if !bn_emojis.is_empty() {
+                    for emoji in bn_emojis {
+                        push_checked(&mut self.suggestions, emoji);
+                    }
+                }
             }
         }
 
+        // Add those preceding and trailing meta characters.
+        if !typed_added && (!string.preceding().is_empty() || !string.trailing().is_empty()) {
+            for item in self.suggestions.iter_mut() {
+                *item.change_item() = format!(
+                    "{}{}{}",
+                    string.preceding(),
+                    item.to_string(),
+                    string.trailing()
+                );
+            }
+        }
+
+        // Phonetic transliteration of the typed text (including preceding and trailing meta characters).
+        push_checked(
+            &mut self.suggestions,
+            Rank::last_ranked(
+                format!(
+                    "{}{}{}",
+                    string.preceding(),
+                    self.pbuffer,
+                    string.trailing()
+                ),
+                2,
+            ),
+        );
+
         // Include written English word if the feature is enabled and it is not included already.
-        if config.get_suggestion_include_english() && !typed_added {
+        // Avoid including meta character suggestion twice, so check `term` is not equal to the
+        // captured preceding characters
+        if config.get_suggestion_include_english() && !typed_added && term != string.preceding() {
             self.suggestions
                 .push(Rank::last_ranked(term.to_string(), 3));
         }
@@ -198,15 +204,16 @@ impl PhoneticSuggestion {
     }
 
     /// Make suggestions from the given `splitted_string`. This will include dictionary and auto-correct suggestion.
-    pub(crate) fn suggestion_with_dict(
-        &mut self,
-        string: &SplittedString,
-        data: &Data,
-    ) {
+    pub(crate) fn suggestion_with_dict(&mut self, string: &SplittedString, data: &Data) {
         self.suggestions.clear();
+        self.pbuffer.clear();
 
-        self.phonetic
-            .convert_into(string.word(), &mut self.pbuffer);
+        if string.word().is_empty() {
+            // If the word is empty, return early.
+            return;
+        }
+
+        self.phonetic.convert_into(string.word(), &mut self.pbuffer);
 
         let phonetic = self.pbuffer.clone();
 
@@ -221,10 +228,9 @@ impl PhoneticSuggestion {
                 suggestions.push(Rank::first_ranked(corrected));
             }
 
-            self.include_from_dictionary(string.word(), &phonetic, &mut suggestions, data);
+            self.include_from_dictionary(string.word(), &phonetic, &mut suggestions);
             // Add the suggestions into the cache.
-            self.cache
-                .insert(string.word().to_string(), suggestions);
+            self.cache.insert(string.word().to_string(), suggestions);
         }
 
         let suffixed_suggestions = self.add_suffix_to_suggestions(string.word(), data);
@@ -236,18 +242,6 @@ impl PhoneticSuggestion {
 
         // Last Item: Phonetic
         push_checked(&mut self.suggestions, Rank::last_ranked(phonetic, 2));
-
-        // Add those preceding and trailing meta characters.
-        if !string.preceding().is_empty() || !string.trailing().is_empty() {
-            for item in self.suggestions.iter_mut() {
-                *item.change_item() = format!(
-                    "{}{}{}",
-                    string.preceding(),
-                    item.to_string(),
-                    string.trailing()
-                );
-            }
-        }
     }
 
     pub(crate) fn get_prev_selection(
@@ -313,24 +307,11 @@ impl PhoneticSuggestion {
         word: &str,
         base: &str,
         suggestions: &mut Vec<Rank>,
-        data: &Data,
     ) {
-        // Build the Regex string.
-        parse(word, &mut self.regex);
-        let rgx = Regex::new(&self.regex).unwrap();
+        let mut items = self.dict.suggest(word);
+        items.sort();
 
-        suggestions.extend(
-            self.table
-                .get(word.get(0..1).unwrap_or_default())
-                .copied()
-                .unwrap_or_default()
-                .iter()
-                .flat_map(|&item| {
-                    data.get_words_for(item)
-                        .filter(|i| rgx.is_match(i))
-                        .map(|s| Rank::new_suggestion(s.to_owned(), base))
-                }),
-        );
+        suggestions.extend(items.into_iter().map(|s| Rank::new_suggestion(s, base)));
     }
 
     /// Search for a `term` in AutoCorrect dictionary.
@@ -371,7 +352,7 @@ mod tests {
         config.set_suggestion_include_english(true);
 
         suggestion.suggest(":)", &data, &mut selections, &config);
-        assert_eq!(suggestion.suggestions, ["😃", ":)", "ঃ)"]);
+        assert_eq!(suggestion.suggestions, ["😃", ":)", "ঃ", "ঃ)"]);
 
         suggestion.suggest(";)", &data, &mut selections, &config);
         assert_eq!(suggestion.suggestions, ["😉", ";)"]);
@@ -379,8 +360,21 @@ mod tests {
         suggestion.suggest("{a}", &data, &mut selections, &config);
         assert_eq!(
             suggestion.suggestions,
-            ["{আ}", "{🅰️}", "{আঃ}", "{া}", "{এ}", "{অ্যা}", "{অ্যাঁ}", "{a}"]
+            [
+                "{আ}",
+                "{🅰️}",
+                "{অ}",
+                "{আঃ}",
+                "{এ}",
+                "{া}",
+                "{অ্যা}",
+                "{অ্যাঁ}",
+                "{a}"
+            ]
         );
+
+        suggestion.suggest("\"", &data, &mut selections, &config);
+        assert_eq!(suggestion.suggestions, ["\""]);
     }
 
     #[test]
@@ -401,7 +395,7 @@ mod tests {
         suggestion.suggest("{a}", &data, &mut selections, &config);
         assert_eq!(
             suggestion.suggestions,
-            ["{আ}", "{আঃ}", "{া}", "{এ}", "{অ্যা}", "{অ্যাঁ}"]
+            ["{আ}", "{অ}", "{আঃ}", "{এ}", "{া}", "{অ্যা}", "{অ্যাঁ}"]
         );
     }
 
@@ -415,12 +409,18 @@ mod tests {
         config.set_smart_quote(true);
 
         suggestion.suggest("\"e\"", &data, &mut selections, &config);
-        assert_eq!(suggestion.suggestions, ["“এ”", "“ে”", "\"e\""]);
+        assert_eq!(
+            suggestion.suggestions,
+            ["“এ”", "“🅰\u{fe0f}”", "“ে”", "\"e\""]
+        );
 
         config.set_smart_quote(false);
 
         suggestion.suggest("\"e\"", &data, &mut selections, &config);
-        assert_eq!(suggestion.suggestions, ["\"এ\"", "\"ে\"", "\"e\""]);
+        assert_eq!(
+            suggestion.suggestions,
+            ["\"এ\"", "\"🅰\u{fe0f}\"", "\"ে\"", "\"e\""]
+        );
     }
 
     #[test]
@@ -439,7 +439,7 @@ mod tests {
         let data = Data::new(&config);
 
         suggestion.suggest(":)", &data, &mut selections, &config);
-        assert_eq!(suggestion.suggestions, ["😃", ":)", "ঃ)"]);
+        assert_eq!(suggestion.suggestions, ["😃", ":)", "ঃ", "ঃ)"]);
 
         suggestion.suggest(";)", &data, &mut selections, &config);
         assert_eq!(suggestion.suggestions, ["😉", ";)"]);
@@ -450,7 +450,16 @@ mod tests {
         suggestion.suggest("cool", &data, &mut selections, &config);
         assert_eq!(
             suggestion.suggestions,
-            ["চুল", "😎", "🆒", "চোল", "চল", "চূল", "ছুল", "ছোল", "ছল", "ছুঁল"]
+            ["চুল", "😎", "🆒", "চূল", "চোল", "ছুল", "ছুঁল", "ছোল"]
+        );
+
+        suggestion.suggest("chup", &data, &mut selections, &config);
+        assert_eq!(suggestion.suggestions, ["ছুপ", "🫢", "🙊", "🤐", "চুপ"]);
+
+        suggestion.suggest("hasi", &data, &mut selections, &config);
+        assert_eq!(
+            suggestion.suggestions,
+            ["হাসি", "☺\u{fe0f}", "😀", "😁", "😃", "😄", "🙂", "হাঁসি"]
         );
 
         suggestion.suggest(".", &data, &mut selections, &config);
@@ -467,20 +476,34 @@ mod tests {
         suggestion.suggest("a", &data, &mut selections, &config);
         assert_eq!(
             suggestion.suggestions,
-            ["আ", "🅰️", "আঃ", "া", "এ", "অ্যা", "অ্যাঁ"]
+            ["আ", "🅰️", "অ", "আঃ", "এ", "া", "অ্যা", "অ্যাঁ"]
         );
 
         suggestion.suggest("as", &data, &mut selections, &config);
-        assert_eq!(suggestion.suggestions, ["আস", "আশ", "এস", "আঁশ"]);
+        assert_eq!(
+            suggestion.suggestions,
+            ["আস", "আশ", "এস", "আঁশ", "অশ্ব", "অশ্ম"]
+        );
 
         suggestion.suggest("asgulo", &data, &mut selections, &config);
         assert_eq!(
             suggestion.suggestions,
-            ["আসগুলো", "আশগুলো", "এসগুলো", "আঁশগুলো", "আসগুল"]
+            [
+                "আসগুলো",
+                "আশগুলো",
+                "এসগুলো",
+                "আঁশগুলো",
+                "অশ্বগুলো",
+                "অশ্মগুলো",
+                "আসগুল"
+            ]
         );
 
         suggestion.suggest("(as)", &data, &mut selections, &config);
-        assert_eq!(suggestion.suggestions, ["(আস)", "(আশ)", "(এস)", "(আঁশ)"]);
+        assert_eq!(
+            suggestion.suggestions,
+            ["(আস)", "(আশ)", "(এস)", "(আঁশ)", "(অশ্ব)", "(অশ্ম)"]
+        );
     }
 
     #[test]
@@ -498,7 +521,7 @@ mod tests {
 
         suggestion.suggest("am", &data, &mut selections, &config);
         suggestion.suggest("ami", &data, &mut selections, &config);
-        assert_eq!(suggestion.suggestions, ["আমি", "আমই", "এমই"]);
+        assert_eq!(suggestion.suggestions, ["আমি", "আমই", "অমি", "এমই"]);
 
         suggestion.suggest("kkhet", &data, &mut selections, &config);
         assert_eq!(
@@ -556,13 +579,19 @@ mod tests {
         assert_eq!(suggestion.suggestions, ["ফরম্যাটতে", "ফরম্যাটে", "ফরমাত্তে"]);
 
         suggestion.suggest("atm", &data, &mut selections, &config);
-        assert_eq!(suggestion.suggestions, ["এটিএম", "আত্ম", "🏧", "অ্যাটম"]);
+        assert_eq!(
+            suggestion.suggestions,
+            ["এটিএম", "আত্ম", "🏧", "⚛\u{fe0f}", "অ্যাটম"]
+        );
 
         suggestion.suggest("atme", &data, &mut selections, &config);
         assert_eq!(suggestion.suggestions, ["এটিএমে", "আত্মে", "অ্যাটমে"]);
         // Cache check
         suggestion.suggest("atm", &data, &mut selections, &config);
-        assert_eq!(suggestion.suggestions, ["এটিএম", "আত্ম", "🏧", "অ্যাটম"]);
+        assert_eq!(
+            suggestion.suggestions,
+            ["এটিএম", "আত্ম", "🏧", "⚛\u{fe0f}", "অ্যাটম"]
+        );
     }
 
     #[test]
@@ -637,7 +666,11 @@ mod tests {
             Rank::Other("*অন্য?!".to_string(), 0),
         ];
         assert_eq!(
-            suggestion.get_prev_selection(&SplittedString::split("*onno?!", false), &data, &mut selections),
+            suggestion.get_prev_selection(
+                &SplittedString::split("*onno?!", false),
+                &data,
+                &mut selections
+            ),
             1
         );
 
@@ -647,7 +680,11 @@ mod tests {
             Rank::Other("ইয়েই".to_string(), 2),
         ];
         assert_eq!(
-            suggestion.get_prev_selection(&SplittedString::split("iei", false), &data, &mut selections),
+            suggestion.get_prev_selection(
+                &SplittedString::split("iei", false),
+                &data,
+                &mut selections
+            ),
             1
         );
 
@@ -657,7 +694,11 @@ mod tests {
             Rank::Other("হঠাতে".to_string(), 0),
         ];
         assert_eq!(
-            suggestion.get_prev_selection(&SplittedString::split("hothate", false), &data, &mut selections),
+            suggestion.get_prev_selection(
+                &SplittedString::split("hothate", false),
+                &data,
+                &mut selections
+            ),
             2
         );
 
@@ -698,20 +739,20 @@ mod tests {
         selections.insert("sesh".to_string(), "শেষ".to_string());
 
         let (suggestions, selection) = suggestion.suggest("sesh", &data, &mut selections, &config);
-        assert_eq!(suggestions, ["সেস", "শেষ", "সেশ"]);
-        assert_eq!(selection, 1);
+        assert_eq!(suggestions, ["🏁", "🔚", "সেস", "শেষ", "সেশ"]);
+        assert_eq!(selection, 3);
 
         let (suggestions, selection) = suggestion.suggest("sesh.", &data, &mut selections, &config);
-        assert_eq!(suggestions, ["সেস।", "শেষ।", "সেশ।"]);
-        assert_eq!(selection, 1);
+        assert_eq!(suggestions, ["🏁।", "🔚।", "সেস।", "শেষ।", "সেশ।"]);
+        assert_eq!(selection, 3);
 
         let (suggestions, _) = suggestion.suggest("sesh:", &data, &mut selections, &config);
-        assert_eq!(suggestions, ["সেস", "শেষ", "সেশঃ"]);
+        assert_eq!(suggestions, ["🏁", "🔚", "সেস", "শেষ", "সেশঃ"]);
 
         let (suggestions, selection) =
             suggestion.suggest("sesh:`", &data, &mut selections, &config);
-        assert_eq!(suggestions, ["সেস:", "শেষ:", "সেশ:"]);
-        assert_eq!(selection, 1);
+        assert_eq!(suggestions, ["🏁:", "🔚:", "সেস:", "শেষ:", "সেশ:"]);
+        assert_eq!(selection, 3);
 
         let (suggestions, _) = suggestion.suggest("6t``", &data, &mut selections, &config);
         assert_eq!(suggestions, ["৬ৎ"]);
@@ -719,16 +760,14 @@ mod tests {
 
     #[test]
     fn test_database() {
-        let config = get_phonetic_method_defaults();
         let mut suggestion = PhoneticSuggestion::default();
-        let data = Data::new(&config);
         let mut suggestions = Vec::new();
 
-        suggestion.include_from_dictionary("a", "a", &mut suggestions, &data);
-        assert_eq!(suggestions, ["অ্যা", "অ্যাঁ", "আ", "আঃ", "া", "এ"]);
+        suggestion.include_from_dictionary("a", "a", &mut suggestions);
+        assert_eq!(suggestions, ["অ", "অ্যা", "অ্যাঁ", "আ", "আঃ", "এ", "া"]);
         suggestions.clear();
 
-        suggestion.include_from_dictionary("(", "", &mut suggestions, &data);
+        suggestion.include_from_dictionary("(", "", &mut suggestions);
         assert_eq!(suggestions, Vec::<Rank>::new());
     }
 }
@@ -787,7 +826,7 @@ mod benches {
         let data = Data::new(&config);
         b.iter(|| {
             let mut suggestions = Vec::new();
-            suggestion.include_from_dictionary("a", "", &mut suggestions, &data);
+            suggestion.include_from_dictionary("a", "", &mut suggestions);
             black_box(suggestions);
         })
     }
@@ -799,7 +838,7 @@ mod benches {
         let data = Data::new(&config);
         b.iter(|| {
             let mut suggestions = Vec::new();
-            suggestion.include_from_dictionary("arO", "", &mut suggestions, &data);
+            suggestion.include_from_dictionary("arO", "", &mut suggestions);
             black_box(suggestions);
         })
     }
@@ -811,7 +850,7 @@ mod benches {
         let data = Data::new(&config);
         b.iter(|| {
             let mut suggestions = Vec::new();
-            suggestion.include_from_dictionary("bistari", "", &mut suggestions, &data);
+            suggestion.include_from_dictionary("bistari", "", &mut suggestions);
             black_box(suggestions);
         })
     }

@@ -1,14 +1,14 @@
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
+use crate::config::Config;
 use crate::context::RitiContext;
 use crate::suggestion::Suggestion;
-use crate::config::Config;
 
 fn riti_free<T>(ptr: *mut T) {
     if !ptr.is_null() {
         unsafe {
-            Box::from_raw(ptr);
+            drop(Box::from_raw(ptr));
         }
     }
 }
@@ -32,18 +32,24 @@ pub extern "C" fn riti_context_free(ptr: *mut RitiContext) {
     riti_free(ptr)
 }
 
+/// Generates suggestion for `key` press.
+///
+/// `modifier`: state of modifier keys
+/// `selection`: previously selected user selection index if available otherwise `0`.
+/// It is used to preserve user's candidate selection if the key is a punctuation character in Phonetic method.
 #[no_mangle]
 pub extern "C" fn riti_get_suggestion_for_key(
     ptr: *mut RitiContext,
     key: u16,
     modifier: u8,
+    selection: u8,
 ) -> *mut Suggestion {
     let context = unsafe {
         assert!(!ptr.is_null());
         &*ptr
     };
 
-    let suggestion = context.get_suggestion_for_key(key, modifier);
+    let suggestion = context.get_suggestion_for_key(key, modifier, selection);
 
     Box::into_raw(Box::new(suggestion))
 }
@@ -108,11 +114,14 @@ pub extern "C" fn riti_context_finish_input_session(ptr: *mut RitiContext) {
 ///
 /// If the `ctrl` parameter is true then it deletes the whole word
 /// in composition currently and ends the ongoing input session.
-/// 
+///
 /// If the internal buffer becomes empty, this function will
 /// end the ongoing input session.
 #[no_mangle]
-pub extern "C" fn riti_context_backspace_event(ptr: *mut RitiContext, ctrl: bool) -> *mut Suggestion {
+pub extern "C" fn riti_context_backspace_event(
+    ptr: *mut RitiContext,
+    ctrl: bool,
+) -> *mut Suggestion {
     let context = unsafe {
         assert!(!ptr.is_null());
         &*ptr
@@ -132,7 +141,10 @@ pub extern "C" fn riti_suggestion_free(ptr: *mut Suggestion) {
 
 /// Get the suggestion of the `index` from suggestions.
 #[no_mangle]
-pub extern "C" fn riti_suggestion_get_suggestion(ptr: *const Suggestion, index: usize) -> *mut c_char {
+pub extern "C" fn riti_suggestion_get_suggestion(
+    ptr: *const Suggestion,
+    index: usize,
+) -> *mut c_char {
     let suggestion = unsafe {
         assert!(!ptr.is_null());
         &*ptr
@@ -140,9 +152,7 @@ pub extern "C" fn riti_suggestion_get_suggestion(ptr: *const Suggestion, index: 
 
     let string = suggestion.get_suggestions()[index].clone();
 
-    unsafe {
-        CString::from_vec_unchecked(string.into()).into_raw()
-    }
+    unsafe { CString::from_vec_unchecked(string.into()).into_raw() }
 }
 
 /// Get the only suggestion of the *lonely* `Suggestion`.
@@ -174,13 +184,18 @@ pub extern "C" fn riti_suggestion_get_auxiliary_text(ptr: *const Suggestion) -> 
 /// the ANSI encoding if it was specified when the instance of this `Suggestion`
 /// was created.
 #[no_mangle]
-pub extern "C" fn riti_suggestion_get_pre_edit_text(ptr: *const Suggestion, index: usize) -> *mut c_char {
+pub extern "C" fn riti_suggestion_get_pre_edit_text(
+    ptr: *const Suggestion,
+    index: usize,
+) -> *mut c_char {
     let suggestion = unsafe {
         assert!(!ptr.is_null());
         &*ptr
     };
 
-    unsafe { CString::from_vec_unchecked(suggestion.get_pre_edit_text(index).into_bytes()).into_raw() }
+    unsafe {
+        CString::from_vec_unchecked(suggestion.get_pre_edit_text(index).into_bytes()).into_raw()
+    }
 }
 
 /// Free the allocated string.
@@ -241,15 +256,14 @@ pub extern "C" fn riti_suggestion_is_empty(ptr: *const Suggestion) -> bool {
 
 /// Creates a new instance of Config which is used to initialize
 /// and to control the configuration of RitiContext.
-/// 
+///
 /// This function creates an instance of Config in an initial
 /// state which can't be used before populating the Config using
 /// `riti_config_set_*` set of functions.
 #[no_mangle]
 pub extern "C" fn riti_config_new() -> *mut Config {
-    Box::into_raw(Box::new(Config::default()))
+    Box::into_raw(Box::default())
 }
-
 
 /// Free the allocated Config struct.
 #[no_mangle]
@@ -257,8 +271,12 @@ pub extern "C" fn riti_config_free(ptr: *mut Config) {
     riti_free(ptr)
 }
 
+/// Sets the layout file path.
+/// For Avro Phonetic, it accepts the name `avro_phonetic`.
+///
+/// Returns `true` if the layout file path or name is valid.
 #[no_mangle]
-pub extern "C" fn riti_config_set_layout_file(ptr: *mut Config, path: *const c_char) {
+pub extern "C" fn riti_config_set_layout_file(ptr: *mut Config, path: *const c_char) -> bool {
     let config = unsafe {
         assert!(!ptr.is_null());
         &mut *ptr
@@ -266,12 +284,15 @@ pub extern "C" fn riti_config_set_layout_file(ptr: *mut Config, path: *const c_c
 
     unsafe {
         let layout = CStr::from_ptr(path).to_str().unwrap();
-        config.set_layout_file_path(layout);
+        config.set_layout_file_path(layout)
     }
 }
 
+/// Sets the database directory path.
+///
+/// Returns `true` if the path exists.
 #[no_mangle]
-pub extern "C" fn riti_config_set_database_dir(ptr: *mut Config, path: *const c_char) {
+pub extern "C" fn riti_config_set_database_dir(ptr: *mut Config, path: *const c_char) -> bool {
     let config = unsafe {
         assert!(!ptr.is_null());
         &mut *ptr
@@ -279,7 +300,7 @@ pub extern "C" fn riti_config_set_database_dir(ptr: *mut Config, path: *const c_
 
     unsafe {
         let path = CStr::from_ptr(path).to_str().unwrap();
-        config.set_database_dir(path);
+        config.set_database_dir(path)
     }
 }
 

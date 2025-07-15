@@ -2,15 +2,15 @@ use super::search::search_dictionary;
 use super::{chars::*, layout::Layout};
 use crate::config::Config;
 use crate::suggestion::{Rank, Suggestion};
-use crate::utility::{get_modifiers, Utility, SplittedString, smart_quoter};
+use crate::utility::{get_modifiers, smart_quoter, SplittedString, Utility};
 use crate::{context::Method, data::Data, keycodes::keycode_to_char};
 
 const MARKS: &str = "`~!@#$%^+*-_=+\\|\"/;:,./?><()[]{}";
 
 enum PendingKar {
-    IKar,
-    EKar,
-    OIKar,
+    I,
+    E,
+    OI,
 }
 
 pub(crate) struct FixedMethod {
@@ -26,6 +26,7 @@ impl Method for FixedMethod {
         &mut self,
         key: u16,
         modifier: u8,
+        _selection: u8,
         data: &Data,
         config: &Config,
     ) -> Suggestion {
@@ -165,9 +166,9 @@ impl FixedMethod {
             } else if let Some(emojis) = data.get_emoji_by_bengali(word) {
                 // Emoji addition with it's Bengali name.
                 // Add preceding and trailing meta characters.
-                let emojis = emojis.zip(1..).map(|(s, r)| {
-                    Rank::emoji_ranked(format!("{}{}{}", first_part, s, last_part), r)
-                });
+                let emojis = emojis
+                    .zip(1..)
+                    .map(|(s, r)| Rank::emoji_ranked(format!("{first_part}{s}{last_part}"), r));
                 self.suggestions.extend(emojis);
             }
         }
@@ -186,13 +187,23 @@ impl FixedMethod {
             self.suggestions.truncate(9);
         }
 
-        Suggestion::new(self.buffer.clone(), &self.suggestions, 0, config.get_ansi_encoding())
+        Suggestion::new(
+            self.buffer.clone(),
+            &self.suggestions,
+            0,
+            config.get_ansi_encoding(),
+        )
     }
 
     fn current_suggestion(&self, config: &Config) -> Suggestion {
         if !self.buffer.is_empty() {
             if config.get_fixed_suggestion() {
-                Suggestion::new(self.buffer.clone(), &self.suggestions, 0, config.get_ansi_encoding())
+                Suggestion::new(
+                    self.buffer.clone(),
+                    &self.suggestions,
+                    0,
+                    config.get_ansi_encoding(),
+                )
             } else {
                 Suggestion::new_lonely(self.buffer.clone(), config.get_ansi_encoding())
             }
@@ -238,9 +249,9 @@ impl FixedMethod {
                     // Capture left standing kar in pending_kar.
                     if rmc != B_HASANTA && is_left_standing_kar(character) {
                         self.pending_kar = match character {
-                            B_I_KAR => Some(PendingKar::IKar),
-                            B_E_KAR => Some(PendingKar::EKar),
-                            B_OI_KAR => Some(PendingKar::OIKar),
+                            B_I_KAR => Some(PendingKar::I),
+                            B_E_KAR => Some(PendingKar::E),
+                            B_OI_KAR => Some(PendingKar::OI),
                             _ => None,
                         };
                         return;
@@ -258,9 +269,9 @@ impl FixedMethod {
                         if rmc == B_HASANTA {
                             self.buffer.pop();
                             self.buffer.push(match left_standing_kar {
-                                PendingKar::EKar => B_E_KAR,
-                                PendingKar::IKar => B_I_KAR,
-                                PendingKar::OIKar => B_OI_KAR,
+                                PendingKar::E => B_E_KAR,
+                                PendingKar::I => B_I_KAR,
+                                PendingKar::OI => B_OI_KAR,
                             });
                             self.pending_kar = None;
                             self.buffer.push(B_HASANTA);
@@ -271,9 +282,9 @@ impl FixedMethod {
                                 && (self.buffer.is_empty() || rmc.is_vowel() || MARKS.contains(rmc))
                             {
                                 self.buffer.push(match left_standing_kar {
-                                    PendingKar::EKar => B_E,
-                                    PendingKar::IKar => B_I,
-                                    PendingKar::OIKar => B_OI,
+                                    PendingKar::E => B_E,
+                                    PendingKar::I => B_I,
+                                    PendingKar::OI => B_OI,
                                 });
                             }
                             self.pending_kar = None;
@@ -368,7 +379,7 @@ impl FixedMethod {
                 return;
             }
 
-            // ঔ making with Hasanta + AU Length Mark 
+            // ঔ making with Hasanta + AU Length Mark
             if character == B_LENGTH_MARK && rmc == B_HASANTA {
                 self.buffer.pop();
                 self.buffer.push(B_OU);
@@ -380,9 +391,9 @@ impl FixedMethod {
                 if character == B_HASANTA && is_left_standing_kar(rmc) {
                     if value.chars().count() == 1 {
                         self.pending_kar = match self.buffer.pop() {
-                            Some(B_I_KAR) => Some(PendingKar::IKar),
-                            Some(B_E_KAR) => Some(PendingKar::EKar),
-                            Some(B_OI_KAR) => Some(PendingKar::OIKar),
+                            Some(B_I_KAR) => Some(PendingKar::I),
+                            Some(B_E_KAR) => Some(PendingKar::E),
+                            Some(B_OI_KAR) => Some(PendingKar::OI),
                             _ => None,
                         };
                         self.buffer.push(character);
@@ -409,9 +420,9 @@ impl FixedMethod {
                     return;
                 }
                 self.buffer.push(match left_standing_kar {
-                    PendingKar::EKar => B_E_KAR,
-                    PendingKar::IKar => B_I_KAR,
-                    PendingKar::OIKar => B_OI_KAR,
+                    PendingKar::E => B_E_KAR,
+                    PendingKar::I => B_I_KAR,
+                    PendingKar::OI => B_OI_KAR,
                 });
                 self.pending_kar = None;
                 return;
@@ -538,7 +549,7 @@ mod tests {
     use crate::{
         context::Method,
         data::Data,
-        keycodes::{VC_A, VC_I, VC_M, VC_K, VC_QUOTE, VC_PAREN_LEFT, VC_PAREN_RIGHT, VC_SEMICOLON},
+        keycodes::{VC_A, VC_I, VC_K, VC_M, VC_PAREN_LEFT, VC_PAREN_RIGHT, VC_QUOTE},
     };
 
     #[test]
@@ -579,15 +590,15 @@ mod tests {
         let data = Data::new(&config);
         config.set_suggestion_include_english(true);
 
-        method.get_suggestion(VC_A, 0, &data, &config);
-        method.get_suggestion(VC_M, 0, &data, &config);
-        method.get_suggestion(VC_I, 0, &data, &config);
+        method.get_suggestion(VC_A, 0, 0, &data, &config);
+        method.get_suggestion(VC_M, 0, 0, &data, &config);
+        method.get_suggestion(VC_I, 0, 0, &data, &config);
         assert_eq!(method.typed, "ami");
         assert_eq!(method.suggestions, ["আমি", "আমিন", "আমির", "আমিষ", "ami"]);
         method.finish_input_session();
 
-        method.get_suggestion(VC_PAREN_LEFT, 0, &data, &config);
-        method.get_suggestion(VC_PAREN_RIGHT, 0, &data, &config);
+        method.get_suggestion(VC_PAREN_LEFT, 0, 0, &data, &config);
+        method.get_suggestion(VC_PAREN_RIGHT, 0, 0, &data, &config);
         assert_eq!(method.suggestions, ["()"]);
     }
 
@@ -597,49 +608,37 @@ mod tests {
         let mut config = get_fixed_method_defaults();
         let data = Data::new(&config);
         config.set_suggestion_include_english(true);
-        
+
         config.set_smart_quote(true);
-        method.get_suggestion(VC_QUOTE, 0, &data, &config);
-        method.get_suggestion(VC_K, 0, &data, &config);
-        method.get_suggestion(VC_QUOTE, 0, &data, &config);
+        method.get_suggestion(VC_QUOTE, 0, 0, &data, &config);
+        method.get_suggestion(VC_K, 0, 0, &data, &config);
+        method.get_suggestion(VC_QUOTE, 0, 0, &data, &config);
         assert_eq!(method.suggestions, ["“ক”", "\"k\""]);
         method.finish_input_session();
 
         config.set_smart_quote(false);
-        method.get_suggestion(VC_QUOTE, 0, &data, &config);
-        method.get_suggestion(VC_K, 0, &data, &config);
-        method.get_suggestion(VC_QUOTE, 0, &data, &config);
+        method.get_suggestion(VC_QUOTE, 0, 0, &data, &config);
+        method.get_suggestion(VC_K, 0, 0, &data, &config);
+        method.get_suggestion(VC_QUOTE, 0, 0, &data, &config);
         assert_eq!(method.suggestions, ["\"ক\"", "\"k\""]);
     }
 
+    // The latest Rust version has incompatibility with the sorting order of the suggestions.
+    // So, this sensitive test are disabled for the MSRV.
+    #[rustversion::not(stable(1.63))]
     #[test]
     fn test_emojis() {
+        use crate::keycodes::VC_SEMICOLON; // Don't know why Rust 1.63 errors on unused import in CI.
+
         let mut method = FixedMethod::default();
         let mut config = get_fixed_method_defaults();
         let data = Data::new(&config);
         config.set_fixed_traditional_kar(false);
 
-        method.get_suggestion(VC_SEMICOLON, 0, &data, &config);
-        method.get_suggestion(VC_PAREN_RIGHT, 0, &data, &config);
+        method.get_suggestion(VC_SEMICOLON, 0, 0, &data, &config);
+        method.get_suggestion(VC_PAREN_RIGHT, 0, 0, &data, &config);
         assert_eq!(method.suggestions, [";)", "😉"]);
         method.finish_input_session();
-
-        method.buffer = "হাসি".to_owned();
-        method.create_dictionary_suggestion(&data, &config);
-        assert_eq!(
-            method.suggestions,
-            [
-                "হাসি",
-                "😁",
-                "😄",
-                "😃",
-                "😀",
-                "হাসিল",
-                "হাসিত",
-                "হাসিস",
-                "হাসিব"
-            ]
-        );
 
         method.buffer = "{লজ্জা}".to_owned();
         method.create_dictionary_suggestion(&data, &config);
@@ -649,16 +648,36 @@ mod tests {
                 "{লজ্জা}",
                 "{😳}",
                 "{লজ্জাকর}",
-                "{লজ্জালু}",
                 "{লজ্জানত}",
-                "{লজ্জাবশত}",
+                "{লজ্জালু}",
+                "{লজ্জাজনক}",
                 "{লজ্জাবান}",
                 "{লজ্জাবোধ}",
                 "{লজ্জাবতী}"
             ]
         );
+
+        method.buffer = "হাসি".to_owned();
+        method.create_dictionary_suggestion(&data, &config);
+        assert_eq!(
+            method.suggestions,
+            [
+                "হাসি",
+                "☺\u{fe0f}",
+                "😀",
+                "😁",
+                "😃",
+                "😄",
+                "🙂",
+                "হাসিত",
+                "হাসিব"
+            ]
+        );
     }
 
+    // The latest Rust version has incompatibility with the sorting order of the suggestions.
+    // So, this sensitive test are disabled for the MSRV.
+    #[rustversion::not(stable(1.63))]
     #[test]
     fn test_suggestion_ansi() {
         let mut method = FixedMethod::default();
@@ -667,9 +686,9 @@ mod tests {
         config.set_suggestion_include_english(true);
         config.set_ansi_encoding(true);
 
-        method.get_suggestion(VC_A, 0, &data, &config);
-        method.get_suggestion(VC_M, 0, &data, &config);
-        method.get_suggestion(VC_I, 0, &data, &config);
+        method.get_suggestion(VC_A, 0, 0, &data, &config);
+        method.get_suggestion(VC_M, 0, 0, &data, &config);
+        method.get_suggestion(VC_I, 0, 0, &data, &config);
         assert_eq!(method.typed, "ami");
         assert_eq!(method.suggestions, ["আমি", "আমিন", "আমির", "আমিষ"]);
         method.finish_input_session();
@@ -680,14 +699,14 @@ mod tests {
             method.suggestions,
             [
                 "হাসি",
-                "হাসিস",
                 "হাসিত",
-                "হাসিল",
                 "হাসিব",
-                "হাসিনী",
+                "হাসিল",
+                "হাসিস",
                 "হাসিকা",
-                "হাসিয়া",
-                "হাসিয়ো"
+                "হাসিছে",
+                "হাসিতে",
+                "হাসিনা"
             ]
         );
     }
