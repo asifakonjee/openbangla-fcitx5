@@ -1,9 +1,8 @@
-#!/bin/env bash
+```bash
+#!/usr/bin/env bash
 
 #### OpenBangla Keyboard (Develop Branch) for fcitx5 Installation Script ####
 #### ( https://github.com/asifakonjee ) ####
-
-# fcitx5.sh ( install script with fcitx5 )
 
 # color defination
 red="\e[1;31m"
@@ -15,7 +14,6 @@ cyan="\e[1;36m"
 orange="\x1b[38;5;214m"
 end="\e[1;0m"
 
-# initial texts
 attention="[${orange} ATTENTION ${end}]"
 action="[${green} ACTION ${end}]"
 note="[${magenta} NOTE ${end}]"
@@ -30,31 +28,18 @@ display_text() {
 / /_/ // _ \/ -_)/ _ \ / _  |/ _ `// _ \/ _ `// // _ `/
 \____// .__/\__//_//_//____/ \_,_//_//_/\_, //_/ \_,_/
      /_/                               /___/
-   __ __            __                      __
-  / //_/___  __ __ / /  ___  ___ _ ____ ___/ /
- / ,<  / -_)/ // // _ \/ _ \/ _ `// __// _  /
-/_/|_| \__/ \_, //_.__/\___/\_,_//_/   \_,_/
-           /___/
-
 EOF
 }
 
 clear && display_text
-printf " \n \n"
+printf "\n\n"
 
-
-###------ Startup ------###
-
-# finding the presend directory and log file
 present_dir="$(dirname "$(realpath "$0")")"
 cache_dir="$present_dir/.cache"
-
-# log directory
 log="$present_dir/Install.log"
-if [[ ! -f "$log" ]]; then
-    touch "$log"
-fi
 
+mkdir -p "$cache_dir"
+touch "$log"
 
 # Detect package manager
 if command -v pacman &> /dev/null; then
@@ -67,20 +52,13 @@ elif command -v xbps-install &> /dev/null; then
     pkg="xbps-install"
 elif command -v apt &> /dev/null; then
     pkg="apt"
-elif command -v eopkg &> /dev/null; then
-    pkg="eopkg"
-elif command -v apk &> /dev/null; then
-    pkg="apk"
 else
     printf "${error}\n! No supported package manager found!\n"
     exit 1
 fi
 
+printf "${attention}\n!! Installing necessary packages using ${pkg}\n"
 
-# Print message about installing necessary packages
-printf "${attention}\n!! Installing necessary packages using ${pkg} \n"
-
-# Install required packages based on the detected package manager
 case "$pkg" in
     pacman)
         sudo pacman -S --noconfirm base-devel rust cmake qt5-base zstd fcitx5 fcitx5-configtool fcitx5-qt fcitx5-gtk git
@@ -89,98 +67,58 @@ case "$pkg" in
         sudo dnf install -y @development-tools rust cargo cmake qt5-qtdeclarative-devel libzstd-devel fcitx5 fcitx5-configtool fcitx5-devel fcitx5-qt5 git
         ;;
     zypper)
-        sudo zypper in -y libQt5Core-devel libQt5Widgets-devel libQt5Network-devel libzstd-devel libzstd1 cmake make ninja rust clang gcc patterns-devel-base-devel_basis fcitx5-devel fcitx5 fcitx5-configtool git
+        sudo zypper in -y libQt5Core-devel libQt5Widgets-devel libQt5Network-devel libzstd-devel cmake make ninja rust gcc fcitx5-devel fcitx5 fcitx5-configtool git
         ;;
     xbps-install)
-        sudo xbps-install -y base-devel make cmake rust cargo qt5-declarative-devel libzstd-devel qt5-devel fcitx5 libfcitx5-devel fcitx5-configtool git
+        sudo xbps-install -y base-devel cmake rust cargo qt5-devel libzstd-devel fcitx5 libfcitx5-devel fcitx5-configtool git
         ;;
     apt)
-        sudo apt install -y build-essential rustc cargo curl cmake qtbase5-dev qtbase5-dev-tools libzstd-dev libfcitx5core-dev fcitx5 fcitx5-config-qt git
+        sudo apt update
+        sudo apt install -y build-essential curl cmake qtbase5-dev qtbase5-dev-tools libzstd-dev libfcitx5core-dev fcitx5 fcitx5-config-qt git
 
-        ### Rust upgrade for apt ###
-        printf "${note}\n* Detected Debian-based system. Ensuring Rust is up-to-date via rustup...\n"
+        printf "${note}\n* Installing Rust via rustup...\n"
 
-        # Remove old system Rust
-        sudo apt remove -y rustc cargo
-
-        # Install rustup
         if ! command -v rustup &>/dev/null; then
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-            source "$HOME/.cargo/env"
+            curl https://sh.rustup.rs -sSf | sh -s -- -y
         fi
-
-        # Ensure rustup is in PATH
-        export PATH="$HOME/.cargo/bin:$PATH"
-
-        # Update to latest stable Rust
-        rustup install stable
-        rustup default stable
-
-        printf "${done}\n==> Rust has been installed via rustup (version: $(rustc --version))\n"
-        ;;
-    *)
-        printf "${error}\n! Unsupported package manager: $pkg\n"
-        exit 1
         ;;
 esac
 
-printf "${action}\n==> Now building ${orange}Openbangla Keyboard${end}...\n"
-
-if [[ -d "$cache_dir/openbangla-keyboard" ]]; then
-    printf "${note}\n* Directory '${orange}openbangla-keyboard${end}' was located in the '${cache_dir}' directory. Removing it.\n" && sleep 1
-    sudo rm -r "$cache_dir/openbangla-keyboard"
+# Load Rust environment
+if [ -f "$HOME/.cargo/env" ]; then
+    source "$HOME/.cargo/env"
 fi
+export PATH="$HOME/.cargo/bin:$PATH"
 
-# Clone repository
-git clone --recursive https://github.com/asifakonjee/openbangla-fcitx5.git "$cache_dir/openbangla-keyboard" 2>&1 | tee -a "$log" || {
-    printf "${error} - Could not clone OpenBangla Keyboard repository\n"
+printf "${note}\n* Rust: $(rustc --version 2>/dev/null)\n"
+printf "${note}\n* CMake: $(cmake --version | head -n1)\n"
+
+printf "${action}\n==> Building OpenBangla Keyboard...\n"
+
+rm -rf "$cache_dir/openbangla-keyboard"
+
+git clone --recursive https://github.com/asifakonjee/openbangla-fcitx5.git "$cache_dir/openbangla-keyboard" 2>&1 | tee -a "$log" || exit 1
+
+cd "$cache_dir/openbangla-keyboard" || exit 1
+
+mkdir -p build && cd build || exit 1
+
+# CMake with Rust support FIX
+cmake .. \
+  -DCMAKE_INSTALL_PREFIX="/usr" \
+  -DENABLE_FCITX=ON \
+  -DCMAKE_EXPERIMENTAL_RUST=ON \
+  -DCMAKE_RUST_COMPILER="$(which rustc)" \
+  2>&1 | tee -a "$log" || {
+    printf "${error}\n! CMake configuration failed\n"
     exit 1
 }
 
-# Move into the cloned directory
-cd "$cache_dir/openbangla-keyboard" || {
-    printf "${error}\n! Unable to change directory\n"
-    exit 1
-}
-
-# Checkout the develop branch
-git checkout develop 2>&1 | tee -a "$log" || {
-    printf "${error}\n! Unable to checkout develop branch\n"
-    exit 1
-}
-
-# Update submodules
-git submodule update --init --recursive 2>&1 | tee -a "$log" || {
-    printf "${error}\n! Unable to update git submodules\n"
-    exit 1
-}
-
-# Create and enter the build directory
-mkdir build && cd build || {
-    printf "${error}\n! Unable to create and change to build directory\n"
-    exit 1
-}
-
-# Run CMake
-if [[ "$pkg" == "pacman" ]]; then
-    cmake .. -DCMAKE_INSTALL_PREFIX="/usr" -DENABLE_FCITX=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5 2>&1 | tee -a "$log" || {
-        printf "${error}\n! CMake configuration failed\n"
-        exit 1
-    }
-else
-    cmake .. -DCMAKE_INSTALL_PREFIX="/usr" -DENABLE_FCITX=ON 2>&1 | tee -a "$log" || {
-        printf "${error}\n! CMake configuration failed\n"
-        exit 1
-    }
-fi
-
-# Build the project
 make -j$(nproc) 2>&1 | tee -a "$log" || {
     printf "${error}\n! Build failed\n"
     exit 1
 }
 
-# Install the project
 sudo make install 2>&1 | tee -a "$log" || {
     printf "${error}\n! Installation failed\n"
     exit 1
@@ -188,13 +126,17 @@ sudo make install 2>&1 | tee -a "$log" || {
 
 printf "${done}\n==> Installation completed successfully!\n"
 
-exit 0
+# Install fonts
+printf "\n${attention} Installing Bangla fonts...\n"
 
-printf "\n${attention} - Now installing some fonts (Bangla)\n" && sleep 1 && clear
 if git clone --depth=1 https://github.com/asifakonjee/bangla-fonts.git "$cache_dir/Fonts" 2>&1 | tee -a "$log"; then
     mkdir -p ~/.local/share/fonts
-    cp -r "$cache_dir/Fonts" ~/.local/share/fonts/
-    sudo fc-cache -fv 2>&1 | tee -a "$log"
+    cp -r "$cache_dir/Fonts"/* ~/.local/share/fonts/
+    fc-cache -fv 2>&1 | tee -a "$log"
+    printf "${done}\n==> Fonts installed successfully!\n"
 else
-    printf "${error} - Sorry, could not install fonts.\n"
+    printf "${error} Could not install fonts.\n"
 fi
+
+exit 0
+```
