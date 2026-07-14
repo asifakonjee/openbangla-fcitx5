@@ -83,7 +83,7 @@ printf "${attention}\n!! Installing necessary packages using ${pkg} \n"
 # Install required packages based on the detected package manager
 case "$pkg" in
     pacman)
-        sudo pacman -S --noconfirm base-devel rust cmake qt5-base zstd fcitx5 fcitx5-configtool fcitx5-qt fcitx5-gtk git
+        sudo pacman -S --needed --noconfirm base-devel rust cmake qt5-base zstd fcitx5 fcitx5-configtool fcitx5-qt fcitx5-gtk git
         ;;
     dnf)
         sudo dnf install -y @development-tools rust cargo cmake qt5-qtdeclarative-devel libzstd-devel fcitx5 fcitx5-configtool fcitx5-devel fcitx5-qt5 git
@@ -128,11 +128,11 @@ printf "${action}\n==> Now building ${orange}Openbangla Keyboard${end}...\n"
 
 if [[ -d "$cache_dir/openbangla-keyboard" ]]; then
     printf "${note}\n* Directory '${orange}openbangla-keyboard${end}' was located in the '${cache_dir}' directory. Removing it.\n" && sleep 1
-    sudo rm -r "$cache_dir/openbangla-keyboard"
+    rm -r "$cache_dir/openbangla-keyboard"
 fi
 
 # Clone repository
-git clone --recursive https://github.com/asifakonjee/openbangla-fcitx5.git "$cache_dir/openbangla-keyboard" 2>&1 | tee -a "$log" || {
+git clone https://github.com/asifakonjee/openbangla-fcitx5.git "$cache_dir/openbangla-keyboard" 2>&1 | tee -a "$log" || {
     printf "${error} - Could not clone OpenBangla Keyboard repository\n"
     exit 1
 }
@@ -151,13 +151,7 @@ mkdir build && cd build || {
 }
 
 # Run CMake
-if [[ "$pkg" == "pacman" ]]; then
-    cmake .. -DCMAKE_EXPERIMENTAL_RUST=3cc9b32c-47d3-4056-8953-d74e69fc0d6c -DENABLE_IBUS=OFF -DENABLE_FCITX=ON -DCMAKE_INSTALL_PREFIX="/usr" 2>&1 | tee -a "$log" || {
-        printf "${error}\n! CMake configuration failed\n"
-        exit 1
-    }
-else
-    cmake .. -DCMAKE_INSTALL_PREFIX="/usr" -DENABLE_FCITX=ON 2>&1 | tee -a "$log" || {
+cmake .. -DCMAKE_INSTALL_PREFIX="/usr" -DENABLE_FCITX=ON 2>&1 | tee -a "$log" || {
         printf "${error}\n! CMake configuration failed\n"
         exit 1
     }
