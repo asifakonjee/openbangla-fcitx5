@@ -12,7 +12,7 @@ add_definitions(-DPROJECT_VERSION="${PROJECT_VERSION}")
 set(CMAKE_CXX_STANDARD 17)
 
 if(NOT WIN32)
-    enable_language(Rust)
+    find_package(Rust REQUIRED)
     include(CMakeCargo)
 endif()
 
