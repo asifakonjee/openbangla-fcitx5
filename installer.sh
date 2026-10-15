@@ -5,6 +5,8 @@
 
 # fcitx5.sh ( install script with fcitx5 )
 
+set -o pipefail
+
 # color defination
 red="\e[1;31m"
 green="\e[1;32m"
@@ -152,10 +154,9 @@ mkdir build && cd build || {
 
 # Run CMake
 cmake .. -DCMAKE_INSTALL_PREFIX="/usr" -DENABLE_FCITX=ON 2>&1 | tee -a "$log" || {
-        printf "${error}\n! CMake configuration failed\n"
-        exit 1
-    }
-fi
+    printf "${error}\n! CMake configuration failed\n"
+    exit 1
+}
 
 # Build the project
 make -j$(nproc) 2>&1 | tee -a "$log" || {
